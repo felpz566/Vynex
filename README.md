@@ -88,7 +88,7 @@ Example export URL:
 /api/integrations/github/export?owner=felpz566&repo=Vynex&ref=main
 ```
 
-The browser's normal download flow works on desktop and mobile. Export requires an active GitHub session and access to the selected repository. The UI to browse repositories and start downloads still needs to be connected to these endpoints.
+The responsive `/github` page lets users connect GitHub, search available repositories, download ZIPs, and disconnect. The browser's normal download flow works on desktop and mobile. Export requires an active GitHub session and access to the selected repository.
 
 ## Current scope
 
