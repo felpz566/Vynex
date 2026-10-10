@@ -24,6 +24,7 @@ function Header({ onStart, onNotify }) {
           <a href="#recursos" onClick={closeMenu}>Recursos</a>
           <a href="#como-funciona" onClick={closeMenu}>Como funciona</a>
           <a href="#planos" onClick={closeMenu}>Planos</a>
+          <a href="/github" onClick={closeMenu}>GitHub</a>
         </nav>
         <div className="header-actions">
           <button className="login-link" onClick={() => onNotify('O acesso à conta será ativado em breve.')}>Entrar</button>
