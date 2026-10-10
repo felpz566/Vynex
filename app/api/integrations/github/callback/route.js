@@ -25,7 +25,7 @@ export async function GET(request) {
   const oauthError = url.searchParams.get('error');
 
   const fail = (message) => {
-    const response = NextResponse.redirect(new URL('/?github=error', url.origin));
+    const response = NextResponse.redirect(new URL('/github?github=error', url.origin));
     response.cookies.set(GITHUB_STATE_COOKIE, '', cookieOptions(0));
     response.headers.set('Cache-Control', 'no-store');
     response.headers.set('X-Vynex-Integration-Error', message);
@@ -86,7 +86,7 @@ export async function GET(request) {
       expiresAt: Date.now() + maxAge * 1000,
     });
 
-    const response = NextResponse.redirect(new URL('/?github=connected', url.origin));
+    const response = NextResponse.redirect(new URL('/github?github=connected', url.origin));
     response.cookies.set(GITHUB_SESSION_COOKIE, encryptedSession, cookieOptions(maxAge));
     response.cookies.set(GITHUB_STATE_COOKIE, '', cookieOptions(0));
     response.headers.set('Cache-Control', 'no-store');
