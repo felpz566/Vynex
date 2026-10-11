@@ -45,7 +45,7 @@ function starterProject(name = 'meu-projeto') {
           ]
         }, null, 2)))),
         size: 0,
-      },,
+      },
     ],
     updatedAt: Date.now(),
   };
