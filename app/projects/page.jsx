@@ -4,8 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft, Check, CloudUpload, FileCode2, FilePlus2, FolderOpen,
   Github, HardDrive, LoaderCircle, LockKeyhole, Mail, Plus, RefreshCw,
-  Save, Search, Upload, X,
+  Save, Search, Upload, X, Package, Download, Monitor, CircleCheck, CircleAlert,
 } from 'lucide-react';
+import JSZip from 'jszip';
 import './projects.css';
 import ProjectTerminal from '../../src/components/ProjectTerminal.jsx';
 
@@ -61,6 +62,11 @@ export default function ProjectsPage() {
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [resultUrl, setResultUrl] = useState('');
+  const [buildBusy, setBuildBusy] = useState(false);
+  const [buildRepo, setBuildRepo] = useState('');
+  const [buildStatus, setBuildStatus] = useState(null);
+  const [buildError, setBuildError] = useState('');
+  const [downloadBusy, setDownloadBusy] = useState(false);
   const fileInput = useRef(null);
   const folderInput = useRef(null);
 
@@ -184,6 +190,87 @@ export default function ProjectsPage() {
       : project));
   };
 
+  const startBuild = async () => {
+    if (!activeProject) return;
+    if (!connected) {
+      window.location.href = '/api/integrations/github/start?next=%2Fprojects';
+      return;
+    }
+    setBuildBusy(true);
+    setBuildError('');
+    setBuildStatus(null);
+    setBuildRepo('');
+    try {
+      const response = await fetch('/api/projects/build', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectName: activeProject.name,
+          files: activeProject.files.map(({ path, contentBase64 }) => ({ path, contentBase64 })),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Não foi possível iniciar a compilação.');
+      setBuildRepo(data.repository);
+      setBuildStatus({ status: 'queued', conclusion: null, runUrl: data.repositoryUrl, artifactId: null });
+      setNotice('Compilação iniciada. O Vynex está preparando o instalador do Windows.');
+    } catch (err) {
+      setBuildError(err instanceof Error ? err.message : 'Falha ao iniciar a compilação.');
+    } finally {
+      setBuildBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!buildRepo || !buildStatus || !['queued', 'in_progress', 'requested', 'waiting', 'pending'].includes(buildStatus.status)) return;
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch('/api/projects/build/status?repo=' + encodeURIComponent(buildRepo), { cache: 'no-store' });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Não foi possível consultar o build.');
+        if (!cancelled) {
+          setBuildStatus(data);
+          if (data.status === 'completed' && data.conclusion === 'success') setNotice('Instalador Windows pronto para baixar.');
+          if (data.status === 'completed' && data.conclusion !== 'success') setBuildError('A compilação falhou. Abra os logs do build para ver o erro e corrigir o projeto.');
+        }
+      } catch (err) {
+        if (!cancelled) setBuildError(err instanceof Error ? err.message : 'Falha ao consultar o build.');
+      }
+    }, 5000);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [buildRepo, buildStatus]);
+
+  const downloadInstaller = async () => {
+    if (!buildRepo || !buildStatus?.artifactId) return;
+    setDownloadBusy(true);
+    setBuildError('');
+    try {
+      const response = await fetch('/api/projects/build/download?repo=' + encodeURIComponent(buildRepo) + '&artifact=' + encodeURIComponent(buildStatus.artifactId), { cache: 'no-store' });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Não foi possível baixar o instalador.');
+      }
+      const archive = await JSZip.loadAsync(await response.arrayBuffer());
+      const executable = Object.values(archive.files).find((file) => !file.dir && file.name.toLowerCase().endsWith('.exe'));
+      if (!executable) throw new Error('O artefato foi baixado, mas não contém um .exe. Confira os logs da compilação.');
+      const blob = await executable.async('blob');
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = executable.name.split('/').pop() || 'Vynex-Setup.exe';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setNotice('Download do instalador iniciado.');
+    } catch (err) {
+      setBuildError(err instanceof Error ? err.message : 'Falha ao preparar o download do instalador.');
+    } finally {
+      setDownloadBusy(false);
+    }
+  };
+
   const pushProject = async () => {
     if (!activeProject) return;
     if (!connected) {
@@ -287,6 +374,31 @@ export default function ProjectsPage() {
                 {activeProject.files.length === 0 && <div className="projects-no-files">Nenhum arquivo. Use “Arquivos” ou “Pasta” para importar.</div>}
                 <button className="projects-dropzone" onClick={() => fileInput.current?.click()}><CloudUpload size={22}/><b>Adicionar arquivos do dispositivo</b><span>Computador ou celular · até 2 MB por arquivo</span></button>
               </div>
+
+              <section className="projects-build-panel">
+                <div className="projects-build-heading">
+                  <span className="projects-build-icon"><Monitor size={19}/></span>
+                  <div><h2>Compilar aplicativo para Windows</h2><p>Gera um instalador .exe para projetos web HTML, CSS e JavaScript, sem ferramentas locais.</p></div>
+                </div>
+                <div className="projects-build-actions">
+                  <button className="projects-build-button" onClick={startBuild} disabled={buildBusy || downloadBusy || !activeProject.files.length}>
+                    {buildBusy ? <><LoaderCircle className="projects-spin" size={16}/> Preparando build...</> : <><Package size={16}/> Compilar e baixar .exe</>}
+                  </button>
+                  {buildStatus?.status === 'completed' && buildStatus?.conclusion === 'success' && buildStatus.artifactId && (
+                    <button className="projects-download-button" onClick={downloadInstaller} disabled={downloadBusy}>
+                      {downloadBusy ? <><LoaderCircle className="projects-spin" size={16}/> Preparando...</> : <><Download size={16}/> Baixar instalador</>}
+                    </button>
+                  )}
+                  {buildStatus && ['queued', 'in_progress', 'requested', 'waiting', 'pending'].includes(buildStatus.status) && (
+                    <span className="projects-build-running"><LoaderCircle className="projects-spin" size={14}/> {buildStatus.status === 'queued' ? 'Na fila de compilação…' : 'Compilando no Windows…'}</span>
+                  )}
+                  {buildStatus?.status === 'completed' && buildStatus?.conclusion === 'success' && !buildStatus.artifactId && <span className="projects-build-running">Instalador finalizado; preparando artefato…</span>}
+                  {buildStatus?.runUrl && <a className="projects-build-logs" href={buildStatus.runUrl} target="_blank" rel="noreferrer">Ver ambiente de build / logs</a>}
+                </div>
+                <p className="projects-build-note"><LockKeyhole size={13}/> Usa um repositório temporário privado no GitHub para compilar. O primeiro build pode levar alguns minutos. Requer GitHub Actions habilitado.</p>
+                {buildError && <div className="projects-build-error"><CircleAlert size={14}/><span>{buildError}{buildError.includes('permissões') || buildError.includes('Reautorize') ? <> <a href="/api/integrations/github/start?next=%2Fprojects">Reconectar GitHub</a></> : null}</span></div>}
+                {buildStatus?.status === 'completed' && buildStatus?.conclusion === 'success' && <div className="projects-build-success"><CircleCheck size={14}/> Build concluído com sucesso. O arquivo .exe está pronto.</div>}
+              </section>
 
               <ProjectTerminal
                 projectName={activeProject.name}
