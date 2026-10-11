@@ -24,10 +24,16 @@ npm run start
 app/
 ├── layout.jsx
 ├── page.jsx
+├── projects/
+│   ├── page.jsx
+│   └── projects.css
 └── api/
     └── integrations/
-        └── github/
-            ├── start/route.js
+        ├── projects/
+        │   └── push/route.js
+        └── integrations/
+            └── github/
+                ├── start/route.js
             ├── callback/route.js
             ├── status/route.js
             ├── repos/route.js
@@ -57,12 +63,11 @@ The GitHub integration is a server-side API. It can authorize on desktop and mob
 
 ### Configure a GitHub App
 
-1. Open GitHub **Settings → Developer settings → GitHub Apps → New GitHub App**.
+1. Open GitHub **Settings → Developer settings → OAuth Apps → New OAuth App**.
 2. Set the Homepage URL to `https://vynex-studio.vercel.app` (or your active Vynex domain).
-3. Set the callback URL to `https://vynex-studio.vercel.app/api/integrations/github/callback`.
-4. Under repository permissions, grant **Contents: Read-only** and **Metadata: Read-only**. Avoid write permissions.
-5. Create the app and install it only on the repositories that Vynex should be allowed to read.
-6. Copy its Client ID and generate a Client Secret.
+3. Set the Authorization callback URL to `https://vynex-studio.vercel.app/api/integrations/github/callback`.
+4. Create the OAuth App, copy its Client ID, and generate a Client Secret.
+5. The OAuth flow requests `repo` (repository read/write) and `user:email` so users can create repositories and push project files. Users authorize their own accounts individually.
 
 Add these environment variables in Vercel (and locally in an untracked `.env.local` file):
 
@@ -88,17 +93,18 @@ Example export URL:
 /api/integrations/github/export?owner=felpz566&repo=Vynex&ref=main
 ```
 
-The responsive `/github` page lets users connect GitHub, search available repositories, download ZIPs, and disconnect. The browser's normal download flow works on desktop and mobile. Export requires an active GitHub session and access to the selected repository.
+The responsive `/github` page lets users connect GitHub, search available repositories, download ZIPs, and disconnect. The responsive `/projects` workspace lets users create a starter project, import individual files or a folder from desktop/mobile, keep drafts in the current browser, and push files to a new or existing GitHub repository. GitHub authorization is per browser/device. Export and push require an active GitHub session and repository access.
 
 ## Current scope
 
 - Responsive product landing page in Portuguese (Brazil)
 - Modular React components with focused responsibilities
 - Interactive visual/code editor preview
-- Interactive project creation modal (session-only demo state)
+- Local Projects workspace with starter projects, device file/folder import, and GitHub push
+- GitHub OAuth sign-in and encrypted server-side session cookie
 - Illustrative Free, Pro and Creator plan cards
 - GitHub authorization and repository ZIP-export API
 
 ## Not implemented yet
 
-Vynex user accounts, persistent project storage, actual visual/code editing, build workers, Windows `.exe` / Android package generation, AI assistance, and payments. Pricing is illustrative and checkout is intentionally inactive until those features exist.
+Vynex-native user profiles and cloud project storage, actual visual/code editing, build workers, Windows `.exe` / Android package generation, AI assistance, and payments. Local drafts are stored in the current browser; push to GitHub to keep code in a remote repository. Pricing is illustrative and checkout is intentionally inactive until those features exist.
