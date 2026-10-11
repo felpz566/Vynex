@@ -9,6 +9,7 @@ import {
 import JSZip from 'jszip';
 import './projects.css';
 import ProjectTerminal from '../../src/components/ProjectTerminal.jsx';
+import VynexAI from '../../src/components/VynexAI.jsx';
 
 const STORAGE_KEY = 'vynex.projects.v1';
 
@@ -320,6 +321,27 @@ export default function ProjectsPage() {
     }
   };
 
+
+  const applyAiChanges = (changes) => {
+    if (!activeProject || !Array.isArray(changes)) return;
+    const nextFiles = [...activeProject.files];
+    for (const change of changes) {
+      const encoded = btoa(unescape(encodeURIComponent(change.content)));
+      const size = new TextEncoder().encode(change.content).length;
+      const index = nextFiles.findIndex((file) => file.path === change.path);
+      const nextFile = { path: change.path, contentBase64: encoded, size };
+      if (index >= 0) nextFiles[index] = nextFile;
+      else nextFiles.push(nextFile);
+    }
+    const nextProjects = projects.map((project) => project.id === activeId
+      ? { ...project, files: nextFiles, updatedAt: Date.now() }
+      : project);
+    setProjects(nextProjects);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(nextProjects)); } catch {
+      setError('As alterações foram aplicadas em memória, mas o navegador não conseguiu salvar o rascunho local.');
+    }
+  };
+
   return (
     <main className="projects-shell">
       <header className="projects-topbar">
@@ -383,6 +405,8 @@ export default function ProjectsPage() {
                 {activeProject.files.length === 0 && <div className="projects-no-files">Nenhum arquivo. Use “Arquivos” ou “Pasta” para importar.</div>}
                 <button className="projects-dropzone" onClick={() => fileInput.current?.click()}><CloudUpload size={22}/><b>Adicionar arquivos do dispositivo</b><span>Computador ou celular · até 2 MB por arquivo</span></button>
               </div>
+
+              <VynexAI key={activeId} projectName={activeProject.name} files={activeProject.files} mode="code" onApply={applyAiChanges} />
 
               <section className="projects-build-panel">
                 <div className="projects-build-heading">
