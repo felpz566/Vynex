@@ -7,6 +7,7 @@ import {
   Save, Search, Upload, X,
 } from 'lucide-react';
 import './projects.css';
+import ProjectTerminal from '../../src/components/ProjectTerminal.jsx';
 
 const STORAGE_KEY = 'vynex.projects.v1';
 
@@ -280,6 +281,14 @@ export default function ProjectsPage() {
                 {activeProject.files.length === 0 && <div className="projects-no-files">Nenhum arquivo. Use “Arquivos” ou “Pasta” para importar.</div>}
                 <button className="projects-dropzone" onClick={() => fileInput.current?.click()}><CloudUpload size={22}/><b>Adicionar arquivos do dispositivo</b><span>Computador ou celular · até 2 MB por arquivo</span></button>
               </div>
+
+              <ProjectTerminal
+                projectName={activeProject.name}
+                files={activeProject.files}
+                onChangeFiles={(nextFiles) => setProjects((current) => current.map((project) => project.id === activeId
+                  ? { ...project, files: nextFiles, updatedAt: Date.now() }
+                  : project))}
+              />
 
               <section className="projects-push-panel">
                 <div className="projects-push-heading"><div className="projects-github-icon"><Github size={19}/></div><div><h2>Enviar para o GitHub</h2><p>Crie um repositório ou faça push para um repositório existente.</p></div></div>
