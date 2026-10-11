@@ -5,6 +5,7 @@ import {
   encryptSession,
   GITHUB_SESSION_COOKIE,
   GITHUB_STATE_COOKIE,
+  GITHUB_RETURN_COOKIE,
 } from '../../../../../src/lib/github-session.js';
 
 export const runtime = 'nodejs';
@@ -22,11 +23,13 @@ export async function GET(request) {
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
   const savedState = request.cookies.get(GITHUB_STATE_COOKIE)?.value;
+  const returnTo = request.cookies.get(GITHUB_RETURN_COOKIE)?.value === '/projects' ? '/projects' : '/github';
   const oauthError = url.searchParams.get('error');
 
   const fail = (message) => {
     const response = NextResponse.redirect(new URL('/github?github=error', url.origin));
     response.cookies.set(GITHUB_STATE_COOKIE, '', cookieOptions(0));
+    response.cookies.set(GITHUB_RETURN_COOKIE, '', cookieOptions(0));
     response.headers.set('Cache-Control', 'no-store');
     response.headers.set('X-Vynex-Integration-Error', message);
     return response;
@@ -57,9 +60,7 @@ export async function GET(request) {
     });
 
     const tokenData = await tokenResponse.json();
-    if (!tokenResponse.ok || !tokenData.access_token) {
-      return fail('Não foi possível obter o token do GitHub.');
-    }
+    if (!tokenResponse.ok || !tokenData.access_token) return fail('Não foi possível obter o token do GitHub.');
 
     const userResponse = await fetch('https://api.github.com/user', {
       headers: {
@@ -86,9 +87,10 @@ export async function GET(request) {
       expiresAt: Date.now() + maxAge * 1000,
     });
 
-    const response = NextResponse.redirect(new URL('/github?github=connected', url.origin));
+    const response = NextResponse.redirect(new URL(returnTo + '?github=connected', url.origin));
     response.cookies.set(GITHUB_SESSION_COOKIE, encryptedSession, cookieOptions(maxAge));
     response.cookies.set(GITHUB_STATE_COOKIE, '', cookieOptions(0));
+    response.cookies.set(GITHUB_RETURN_COOKIE, '', cookieOptions(0));
     response.headers.set('Cache-Control', 'no-store');
     return response;
   } catch {
