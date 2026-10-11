@@ -31,3 +31,6 @@
 .design-property-actions button{cursor:pointer}
 .design-property-actions button:disabled{opacity:.35;cursor:not-allowed}
 @media(max-width:650px){.design-layer-row .design-layer{padding:7px 3px}.design-layer-tools button{width:19px}.design-snap-guide.vertical{top:-55px;bottom:-40px}}
+
+.design-ai-wrap{width:min(100% - 32px,1100px);margin:22px auto 40px}.design-ai-wrap .vynex-ai-panel{margin:0}
+@media(max-width:700px){.design-ai-wrap{width:calc(100% - 20px);margin:12px auto 28px}}
