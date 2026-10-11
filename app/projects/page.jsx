@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft, Check, CloudUpload, FileCode2, FilePlus2, FolderOpen,
-  Github, HardDrive, LoaderCircle, LockKeyhole, Plus, RefreshCw,
+  Github, HardDrive, LoaderCircle, LockKeyhole, Mail, Plus, RefreshCw,
   Save, Search, Upload, X,
 } from 'lucide-react';
 import './projects.css';
@@ -47,6 +47,7 @@ export default function ProjectsPage() {
   const [repositories, setRepositories] = useState([]);
   const [connected, setConnected] = useState(false);
   const [account, setAccount] = useState('');
+  const [cloudAccount, setCloudAccount] = useState(null);
   const [statusLoading, setStatusLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('meu-projeto');
@@ -106,10 +107,15 @@ export default function ProjectsPage() {
 
   useEffect(() => {
     loadGitHub();
+    fetch('/api/auth/google/status', { cache: 'no-store' })
+      .then((response) => response.json())
+      .then((data) => setCloudAccount(data.connected ? data : null))
+      .catch(() => setCloudAccount(null));
     const params = new URLSearchParams(window.location.search);
     if (params.get('github') === 'connected') setNotice('GitHub conectado com sucesso.');
     if (params.get('github') === 'error') setError('Não foi possível conectar ao GitHub. Tente novamente.');
-    if (params.has('github')) window.history.replaceState({}, '', '/projects');
+    if (params.get('cloud') === 'connected') setNotice('Conta Google conectada com sucesso.');
+    if (params.has('github') || params.has('cloud')) window.history.replaceState({}, '', '/projects');
   }, [loadGitHub]);
 
   const filteredProjects = useMemo(() => {
@@ -218,7 +224,8 @@ export default function ProjectsPage() {
         <a className="projects-back" href="/"><ArrowLeft size={17}/> Vynex</a>
         <div className="projects-top-title"><span className="projects-mark">V</span><b>Projetos</b><span className="projects-slash">/ workspace</span></div>
         <div className="projects-account">
-          {connected ? <><span className="projects-live-dot"/> @{account}</> : <a href="/api/integrations/github/start?next=%2Fprojects"><Github size={15}/> Entrar com GitHub</a>}
+          {cloudAccount ? <span title={cloudAccount.email}><Mail size={14}/> {cloudAccount.email}</span> : <a href="/api/auth/google/start"><Mail size={14}/> Google</a>}
+          {connected ? <span title="GitHub conectado"><span className="projects-live-dot"/> @{account}</span> : <a href="/api/integrations/github/start?next=%2Fprojects"><Github size={15}/> GitHub</a>}
         </div>
       </header>
 
