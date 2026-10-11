@@ -114,7 +114,7 @@ export default function VynexAI({ projectName, files, mode = 'code', onApply }) 
       <span className="vynex-ai-credits"><Bot size={13}/> {currentUsage} créditos</span>{expanded ? <ChevronUp size={16}/> : <ChevronDown size={16}/>}
     </button>
     {expanded && <div className="vynex-ai-body">
-      <div className="vynex-ai-explainer"><ShieldCheck size={15}/><span>A IA prepara e revisa uma proposta. <b>Os arquivos só mudam depois da sua aprovação.</b></span></div>
+      <div className="vynex-ai-explainer"><ShieldCheck size={15}/><span>A IA prepara e revisa uma proposta. <b>Os arquivos só mudam depois da sua aprovação.</b> Créditos renovam à meia-noite de Brasília.</span></div>
       <form onSubmit={requestProposal} className="vynex-ai-form">
         <label htmlFor={'vynex-ai-prompt-' + mode}>O que você quer {mode === 'design' ? 'desenhar' : 'programar'}?</label>
         <textarea id={'vynex-ai-prompt-' + mode} value={prompt} onChange={(event) => setPrompt(event.target.value)} rows={3} maxLength={12000} placeholder={mode === 'design' ? 'Ex.: crie uma tela de login moderna, com formulário central, logo e botão roxo…' : 'Ex.: adicione validação de formulário, revise os erros e preserve o comportamento atual…'} disabled={busy}/>
