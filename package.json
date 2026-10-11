@@ -12,6 +12,7 @@
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "lucide-react": "^0.468.0"
+    "lucide-react": "^0.468.0",
+    "jszip": "^3.10.1"
   }
 }
