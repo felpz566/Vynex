@@ -33,7 +33,7 @@ function starterProject(name = 'meu-projeto') {
       },
       {
         path: 'index.html',
-        contentBase64: btoa(unescape(encodeURIComponent('<!doctype html>\n<html lang="pt-BR">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>Meu projeto</title>\n</head>\n<body>\n  <main><h1>Olá, mundo!</h1><p>Este projeto começou no Vynex.</p></main>\n</body>\n</html>\n')),
+        contentBase64: btoa(unescape(encodeURIComponent('<!doctype html>\n<html lang="pt-BR">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>Meu projeto</title>\n</head>\n<body>\n  <main><h1>Olá, mundo!</h1><p>Este projeto começou no Vynex.</p></main>\n</body>\n</html>\n'))),
         size: 0,
       },
     ],
