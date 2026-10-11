@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 const REPO_NAME = /^[A-Za-z0-9_.-]{1,100}$/;
 const MAX_FILES = 50;
 const MAX_FILE_BYTES = 2 * 1024 * 1024;
-const MAX_TOTAL_BYTES = 12 * 1024 * 1024;
+const MAX_TOTAL_BYTES = 4 * 1024 * 1024;
 
 async function githubRequest(token, path, method = 'GET', body) {
   const response = await fetch(`https://api.github.com${path}`, {
@@ -72,7 +72,7 @@ export async function POST(request) {
     const bytes = Buffer.from(file.contentBase64, 'base64').length;
     if (bytes > MAX_FILE_BYTES) return jsonError(`O arquivo "${file.path}" excede 2 MB.`, 413);
     totalBytes += bytes;
-    if (totalBytes > MAX_TOTAL_BYTES) return jsonError('O projeto excede o limite de 12 MB por envio.', 413);
+    if (totalBytes > MAX_TOTAL_BYTES) return jsonError('O projeto excede o limite de 4 MB por envio.', 413);
   }
 
   const owner = createRepository ? session.login : String(body?.repositoryOwner || session.login);
