@@ -107,7 +107,7 @@ export default function VisualDesignPage() {
     setSelectedId(copy.id);
     setNotice('Elemento duplicado.');
   };
-  const toggleElementFlag = (id, key) => setElements((current) => current.map((item) => item.id === id ? { ...item, [key]: item[key] === false ? true : false } : item));
+  const toggleElementFlag = (id, key) => setElements((current) => current.map((item) => item.id === id ? { ...item, [key]: key === 'visible' ? item.visible === false : !item.locked } : item));
   const moveLayerById = (id, direction) => {
     const index = elements.findIndex((item) => item.id === id);
     const target = index + direction;
