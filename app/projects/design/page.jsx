@@ -211,7 +211,7 @@ export default function VisualDesignPage() {
             </button>)}
             {!elements.length && <p className="design-empty">Adicione um elemento para começar.</p>}
           </div>
-          <p className="design-hint">Adicione elementos e selecione uma camada para editar suas propriedades.</p>
+          <p className="design-hint">Arraste ⠿ para mover e ↘ para redimensionar. Use as propriedades para ajustar o visual e salve para incluir no aplicativo.</p>
         </aside>
 
         <section className="design-center">
