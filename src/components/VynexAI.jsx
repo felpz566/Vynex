@@ -170,7 +170,7 @@ export default function VynexAI({ projectName, files, mode = 'code', onApply }) 
         {proposal.checks?.length > 0 && <details className="vynex-ai-checks"><summary>Verificações da revisão ({proposal.checks.length})</summary>{proposal.checks.map((check, index) => <div key={check.label + '-' + index} className={'vynex-ai-check ' + (check.status || 'warning')}><span>{check.status === 'passed' ? <CheckCircle2 size={14}/> : <CircleAlert size={14}/>}</span><div><b>{check.label}</b><p>{check.detail}</p></div></div>)}</details>}
         <div className="vynex-ai-approval-note">Revise a proposta. Ao aprovar, os arquivos correspondentes do rascunho serão substituídos ou novos arquivos serão adicionados.</div>
         <div className="vynex-ai-decision-actions"><button type="button" className="vynex-ai-reject" onClick={() => decide('reject')} disabled={applying}><X size={15}/> Recusar</button><button type="button" className="vynex-ai-approve" onClick={() => decide('approve')} disabled={applying}>{applying ? <LoaderCircle className="vynex-ai-spin" size={15}/> : <Check size={15}/>} Aprovar e aplicar</button></div>
-      </div>
+      </div>}
       </> : <div className="vynex-ai-topups">
         <div className="vynex-ai-topups-heading">
           <span className="vynex-ai-topups-icon"><Wallet size={18}/></span>
