@@ -163,9 +163,9 @@ export default function VisualDesignPage() {
     return <p key={item.id} style={style} onClick={selectElement}>{item.text}</p>;
     })();
     return <div key={item.id} data-vynex-element={item.id} className={selectedId === item.id ? 'design-canvas-element selected' : 'design-canvas-element'} style={{ width: (Math.max(10, Math.min(100, Number(item.width) || 100))) + '%', margin: '12px auto', position: 'relative', transform: 'translate(' + (Number(item.x) || 0) + 'px, ' + (Number(item.y) || 0) + 'px)' }}>
-      {selectedId === item.id && <button type="button" className="design-drag-handle" title="Arraste para mover a camada" onPointerDown={(event) => beginCanvasMove(event, item.id)} aria-label="Mover elemento">⠿</button>}
+      {selectedId === item.id && <button type="button" className="design-drag-handle" title="Arraste para mover a camada" onPointerDown={(event) => beginCanvasMove(event, item.id)} onClick={(event) => event.stopPropagation()} aria-label="Mover elemento">⠿</button>}
       {node}
-      {selectedId === item.id && <button type="button" className="design-resize-handle" title="Arraste para redimensionar" onPointerDown={(event) => beginCanvasResize(event, item)} aria-label="Redimensionar elemento">↘</button>}
+      {selectedId === item.id && <button type="button" className="design-resize-handle" title="Arraste para redimensionar" onPointerDown={(event) => beginCanvasResize(event, item)} onClick={(event) => event.stopPropagation()} aria-label="Redimensionar elemento">↘</button>}
     </div>;
   }), [elements, controlStates, selectedId]);
 
