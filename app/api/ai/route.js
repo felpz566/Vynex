@@ -344,7 +344,7 @@ export async function POST(request) {
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       start(controller) {
-        const send = (event) => controller.enqueue(encoder.encode('data: ' + JSON.stringify(event) + '\\n\\n'));
+        const send = (event) => controller.enqueue(encoder.encode('data: ' + JSON.stringify(event) + '\n\n'));
         (async () => {
           try {
             const result = await propose(request, identity, body, async (index) => send({ type: 'stage', index }));
