@@ -38,9 +38,7 @@ function readIdentity(request) {
   const email = google?.email?.trim().toLowerCase() || '';
   const login = github?.login?.trim().toLowerCase() || '';
   const isAdmin = ADMIN_EMAILS.has(email) || login === 'felpz566';
-  const identityKey = google?.sub
-    ? 'google:' + google.sub
-    : 'github:' + login;
+  const identityKey = email ? 'email:' + email : 'github:' + login;
   return identityKey.length > 7 ? { identityKey, isAdmin, email: email || null, login: login || null } : null;
 }
 
