@@ -44,7 +44,7 @@ function safePath(path) {
   const filename = parts.at(-1);
   const dot = filename.lastIndexOf('.');
   const ext = dot >= 0 ? filename.slice(dot).toLowerCase() : '';
-  return ALLOWED_EXTENSIONS.has(ext) && path !== 'index.html' ? true : ALLOWED_EXTENSIONS.has(ext);
+  return ALLOWED_EXTENSIONS.has(ext);
 }
 
 function workflowSource() {
