@@ -78,7 +78,7 @@ function generatedHtml(projectName, files) {
           const src = /^https?:\/\//i.test(item.text || '') ? escapeHtml(item.text) : '';
           return `<img src="${src}" alt="" style="${style}display:block;max-width:100%;height:auto;border-radius:12px">`;
         }
-        if (item.type === 'box') return `<div style="width:${width}%;min-height:90px;margin:12px auto;background:${bg};border:1px solid #ffffff25;border-radius:12px"></div>`;
+        if (item.type === 'box') return `<div style="width:${width}%;min-height:90px;margin:12px auto;background:${bg};border:1px solid #ffffff25;border-radius:12px;transform:translate(${x}px,${y}px)"></div>`;
         if (item.type === 'heading') return `<h1 style="${style}line-height:1.13;letter-spacing:-1.5px">${text}</h1>`;
         return `<p style="${style}line-height:1.8">${text}</p>`;
       }).join('\n');
