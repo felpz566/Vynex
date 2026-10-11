@@ -242,21 +242,20 @@ async function propose(request, identity, body, onStage = async () => {}) {
     let summary = String(generated.summary || 'Proposta da IA Vynex').slice(0, 1000);
 
     // Independent second pass: the model reviews its draft and returns corrected full files.
-    await onStage(3);
-    const review = await callGemini(
-      'Revise criticamente esta proposta antes que o usuário aprove. Procure sintaxe inválida, regressões óbvias, inconsistências com a solicitação, riscos de segurança e formato inválido. Se encontrar qualquer problema, corrija os arquivos completos. Se estiver boa, devolva os mesmos arquivos sem alterações. Não diga que executou testes. Retorne JSON no formato {"summary":"...","changes":[{"path":"...","content":"..."}],"checks":[{"label":"...","status":"passed|warning|failed","detail":"..."}],"reviewNotes":"..."}.\nModo: ' + mode + '\nPedido: ' + task + '\nProposta inicial: ' + JSON.stringify({ summary, changes, checks, reviewNotes }),
-      'Você está fazendo uma segunda revisão independente. Só marque passed para verificações que possam ser concluídas inspecionando o texto.',
-    );
-    changes = validateChanges(review.changes, mode, files);
-    if (mode === 'code') await onStage(4);
-    checks = Array.isArray(review.checks) ? review.checks.slice(0, 12) : checks;
-    reviewNotes = String(review.reviewNotes || reviewNotes);
-    summary = String(review.summary || summary).slice(0, 1000);
-
-    if (checks.some((item) => item?.status === 'failed')) {
-      return jsonError('A revisão encontrou problemas que não foram resolvidos com confiança. Nenhuma proposta foi criada. Detalhes: ' + checks.filter((item) => item?.status === 'failed').map((item) => item.detail).join(' | ').slice(0, 700), 422);
+    for (let pass = 0; pass < 3; pass += 1) {
+      await onStage(3);
+      const review = await callGemini(
+        'Revise esta proposta criticamente. Corrija os problemas encontrados e devolva os arquivos completos. Não afirme que executou testes. Retorne JSON no formato {"summary":"...","changes":[{"path":"...","content":"..."}],"checks":[{"label":"...","status":"passed|warning|failed","detail":"..."}],"reviewNotes":"..."}.\\nModo: ' + mode + '\\nPedido: ' + task + '\\nPassagem: ' + (pass + 1) + ' de 3\\nNotas anteriores: ' + reviewNotes + '\\nProposta atual: ' + JSON.stringify({ summary, changes, checks, reviewNotes }),
+        'Revise apenas o conteúdo fornecido. Só marque passed quando for possível verificar pelo texto; não diga que executou testes.',
+      );
+      changes = validateChanges(review.changes, mode, files);
+      checks = Array.isArray(review.checks) ? review.checks.slice(0, 12) : checks;
+      reviewNotes = String(review.reviewNotes || reviewNotes);
+      summary = String(review.summary || summary).slice(0, 1000);
+      if (!checks.some((item) => item?.status === 'failed')) break;
+      if (pass === 2) return jsonError('A revisão ainda encontrou problemas após 3 passagens. Nenhuma alteração foi aplicada. Detalhes: ' + checks.filter((item) => item?.status === 'failed').map((item) => item.detail).join(' | ').slice(0, 700), 422);
+      if (mode === 'code') await onStage(4);
     }
-
     await onStage(mode === 'design' ? 4 : 5);
     const proposal = await db('vynex_ai_proposals', {
       method: 'POST',
