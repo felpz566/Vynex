@@ -28,7 +28,7 @@ function Header({ onStart, onNotify }) {
           <a href="/github" onClick={closeMenu}>GitHub</a>
         </nav>
         <div className="header-actions">
-          <a className="login-link" href="/api/integrations/github/start?next=%2Fprojects">Entrar com GitHub</a>
+          <a className="login-link" href="/login">Entrar</a>
           <button className="header-cta" onClick={onStart}>Começar grátis <ArrowUpRight size={15}/></button>
         </div>
         <button className="mobile-menu" aria-label="Abrir menu" onClick={() => setMenuOpen(!menuOpen)}>
