@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Eye, EyeOff, Layers3, Monitor, Plus, Save, Smartphone, Trash2, Type, Square, Image as ImageIcon, MousePointer2, Move, ChevronUp, ChevronDown, Lock, Unlock, Copy, AlignCenter } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Layers3, Monitor, Save, Smartphone, Trash2, Type, Square, Image as ImageIcon, MousePointer2, ChevronUp, ChevronDown, Lock, Unlock, Copy } from 'lucide-react';
 import './design.css';
 
 const STORAGE_KEY = 'vynex.projects.v1';
