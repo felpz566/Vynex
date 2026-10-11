@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Eye, Layers3, Monitor, Plus, Save, Smartphone, Trash2, Type, Square, Image as ImageIcon, MousePointer2, Move, ChevronUp, ChevronDown } from 'lucide-react';
 import './design.css';
 
@@ -31,6 +31,8 @@ export default function VisualDesignPage() {
   const [notice, setNotice] = useState('');
   const [background, setBackground] = useState('#11131c');
   const [controlStates, setControlStates] = useState({});
+  const dragRef = useRef(null);
+  const canvasRef = useRef(null);
   const selected = elements.find((item) => item.id === selectedId) || null;
   const activeProject = projects.find((item) => item.id === activeId) || null;
 
@@ -100,8 +102,58 @@ export default function VisualDesignPage() {
     setSelectedId(next[0]?.id || '');
   };
 
+  const beginCanvasMove = (event, id) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setSelectedId(id);
+    dragRef.current = { mode: 'move', id, lastTarget: id };
+  };
+
+  const beginCanvasResize = (event, item) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setSelectedId(item.id);
+    dragRef.current = { mode: 'resize', id: item.id, startX: event.clientX, startWidth: Number(item.width) || 100 };
+  };
+
+  useEffect(() => {
+    const onPointerMove = (event) => {
+      const drag = dragRef.current;
+      if (!drag) return;
+      if (drag.mode === 'resize') {
+        const rect = canvasRef.current?.getBoundingClientRect();
+        if (!rect?.width) return;
+        const delta = ((event.clientX - drag.startX) / rect.width) * 100;
+        const width = Math.max(10, Math.min(100, Math.round(drag.startWidth + delta)));
+        setElements((current) => current.map((item) => item.id === drag.id ? { ...item, width } : item));
+        return;
+      }
+      const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-vynex-element]');
+      const targetId = target?.getAttribute('data-vynex-element');
+      if (!targetId || targetId === drag.id || targetId === drag.lastTarget) return;
+      setElements((current) => {
+        const from = current.findIndex((item) => item.id === drag.id);
+        const to = current.findIndex((item) => item.id === targetId);
+        if (from < 0 || to < 0 || from === to) return current;
+        const next = [...current];
+        const moved = next.splice(from, 1)[0];
+        next.splice(to, 0, moved);
+        drag.lastTarget = targetId;
+        return next;
+      });
+    };
+    const onPointerUp = () => { dragRef.current = null; };
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+    };
+  }, []);
+
   const generatedMarkup = useMemo(() => elements.map((item) => {
-    const style = { color: item.color, fontSize: `${Number(item.fontSize) || 16}px`, textAlign: item.align || 'left', width: item.width + '%', margin: '12px auto', fontWeight: item.type === 'heading' ? 750 : 400, outline: selectedId === item.id ? '1px solid #a78bfa' : '1px solid transparent', outlineOffset: '4px', cursor: 'pointer' };
+    const node = (() => {
+    const style = { color: item.color, fontSize: `${Number(item.fontSize) || 16}px`, textAlign: item.align || 'left', width: '100%', margin: '0', fontWeight: item.type === 'heading' ? 750 : 400, outline: selectedId === item.id ? '1px solid #a78bfa' : '1px solid transparent', outlineOffset: '4px', cursor: 'pointer' };
     const selectElement = (event) => { event.stopPropagation(); setSelectedId(item.id); };
     if (item.type === 'button') return <button key={item.id} style={{ ...style, background: item.background || '#8b5cf6', border: 0, borderRadius: 9, padding: '12px 20px', cursor: 'pointer' }} onClick={selectElement}>{item.text}</button>;
     if (item.type === 'toggle') {
@@ -114,9 +166,15 @@ export default function VisualDesignPage() {
     }
     if (item.type === 'tabs') return <div key={item.id} style={{ ...style, display: 'flex', gap: 6, justifyContent: item.align === 'left' ? 'flex-start' : item.align === 'right' ? 'flex-end' : 'center', flexWrap: 'wrap' }} onClick={(event) => { event.stopPropagation(); setSelectedId(item.id); }}>{(item.text || 'Início, Sobre, Contato').split(',').map((tab, index) => <button key={index} onClick={(event) => { event.stopPropagation(); setSelectedId(item.id); setControlStates((state) => ({ ...state, [item.id]: index })); }} style={{ border: 0, borderRadius: 7, padding: '9px 13px', color: '#fff', background: (controlStates[item.id] ?? 0) === index ? (item.background || '#8b5cf6') : '#292b36', cursor: 'pointer' }}>{tab.trim()}</button>)}</div>;
     if (item.type === 'image') return <img key={item.id} src={item.text} alt="" style={{ ...style, display: 'block', maxWidth: '100%', height: 'auto', borderRadius: 12 }} onClick={selectElement} />;
-    if (item.type === 'box') return <div key={item.id} style={{ width: item.width + '%', minHeight: 90, margin: '12px auto', background: item.background || '#262a3a', border: '1px solid #ffffff25', borderRadius: 12, outline: selectedId === item.id ? '1px solid #a78bfa' : '1px solid transparent', cursor: 'pointer' }} onClick={selectElement} />;
+    if (item.type === 'box') return <div key={item.id} style={{ width: '100%', minHeight: 90, margin: '0', background: item.background || '#262a3a', border: '1px solid #ffffff25', borderRadius: 12, outline: selectedId === item.id ? '1px solid #a78bfa' : '1px solid transparent', cursor: 'pointer' }} onClick={selectElement} />;
     if (item.type === 'heading') return <h1 key={item.id} style={style} onClick={selectElement}>{item.text}</h1>;
     return <p key={item.id} style={style} onClick={selectElement}>{item.text}</p>;
+    })();
+    return <div key={item.id} data-vynex-element={item.id} className={selectedId === item.id ? 'design-canvas-element selected' : 'design-canvas-element'} style={{ width: (Math.max(10, Math.min(100, Number(item.width) || 100))) + '%', margin: '12px auto', position: 'relative' }}>
+      {selectedId === item.id && <button type="button" className="design-drag-handle" title="Arraste para mover a camada" onPointerDown={(event) => beginCanvasMove(event, item.id)} aria-label="Mover elemento">⠿</button>}
+      {node}
+      {selectedId === item.id && <button type="button" className="design-resize-handle" title="Arraste para redimensionar" onPointerDown={(event) => beginCanvasResize(event, item)} aria-label="Redimensionar elemento">↘</button>}
+    </div>;
   }), [elements, controlStates, selectedId]);
 
   if (!projectLoaded) return <main className="vynex-design-loading">Abrindo editor visual…</main>;
@@ -173,7 +231,7 @@ export default function VisualDesignPage() {
             </div>
           </div>
           <div className="design-stage">
-            <div className={device === 'mobile' ? 'design-canvas mobile' : 'design-canvas'} style={{ background }}>
+            <div ref={canvasRef} className={device === 'mobile' ? 'design-canvas mobile' : 'design-canvas'} style={{ background }}>
               <div className="design-canvas-inner" onClick={() => setSelectedId('')}>
                 {generatedMarkup}
               </div>
