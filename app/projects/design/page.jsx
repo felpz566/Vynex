@@ -117,7 +117,7 @@ export default function VisualDesignPage() {
     if (item.type === 'box') return <div key={item.id} style={{ width: item.width + '%', minHeight: 90, margin: '12px auto', background: item.background || '#262a3a', border: '1px solid #ffffff25', borderRadius: 12, outline: selectedId === item.id ? '1px solid #a78bfa' : '1px solid transparent', cursor: 'pointer' }} onClick={selectElement} />;
     if (item.type === 'heading') return <h1 key={item.id} style={style} onClick={selectElement}>{item.text}</h1>;
     return <p key={item.id} style={style} onClick={selectElement}>{item.text}</p>;
-  }), [elements]);
+  }), [elements, controlStates, selectedId]);
 
   if (!projectLoaded) return <main className="vynex-design-loading">Abrindo editor visual…</main>;
 
