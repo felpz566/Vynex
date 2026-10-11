@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Download, ExternalLink, Github, LockKeyhole, RefreshCw, Search, ShieldCheck, Unplug } from 'lucide-react';
+import { ArrowLeft, Download, ExternalLink, Github, Import, LoaderCircle, LockKeyhole, RefreshCw, Search, ShieldCheck, Unplug } from 'lucide-react';
 import './github.css';
 
 export default function GitHubWorkspacePage() {
@@ -10,6 +10,7 @@ export default function GitHubWorkspacePage() {
   const [query, setQuery] = useState('');
   const [loadingRepos, setLoadingRepos] = useState(false);
   const [error, setError] = useState('');
+  const [importing, setImporting] = useState('');
 
   const loadStatus = useCallback(async () => {
     try {
@@ -49,6 +50,37 @@ export default function GitHubWorkspacePage() {
     );
   }, [repositories, query]);
 
+  const importRepository = async (repo) => {
+    setImporting(repo.fullName);
+    setError('');
+    try {
+      const response = await fetch('/api/integrations/github/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ owner: repo.owner, repo: repo.name, branch: repo.defaultBranch }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Não foi possível importar este repositório.');
+
+      const storageKey = 'vynex.projects.v1';
+      const saved = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      if (!Array.isArray(saved)) throw new Error('Os projetos salvos neste navegador estão inválidos.');
+      const project = {
+        id: 'github-' + repo.id + '-' + Date.now(),
+        name: data.name,
+        description: data.description,
+        files: data.files,
+        updatedAt: Date.now(),
+        source: data.source,
+      };
+      localStorage.setItem(storageKey, JSON.stringify([project, ...saved]));
+      window.location.href = '/projects?imported=' + encodeURIComponent(repo.fullName);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Falha ao importar o repositório.');
+      setImporting('');
+    }
+  };
+
   const disconnect = async () => {
     await fetch('/api/integrations/github/disconnect', { method: 'POST' });
     setRepositories([]);
@@ -65,8 +97,8 @@ export default function GitHubWorkspacePage() {
       <section className="github-content">
         <div className="github-heading">
           <div className="github-eyebrow"><Github size={15}/> INTEGRAÇÃO DE REPOSITÓRIOS</div>
-          <h1>Seus repositórios.<br/><span>Prontos para exportar.</span></h1>
-          <p>Conecte o GitHub para listar os repositórios que você autorizou e baixar qualquer branch como arquivo ZIP — no computador ou no celular.</p>
+          <h1>Seus repositórios.<br/><span>Importe e continue.</span></h1>
+          <p>Importe os arquivos de um repositório diretamente para o workspace do Vynex para continuar editando. O download ZIP também continua disponível.</p>
         </div>
 
         {!status ? (
@@ -96,7 +128,7 @@ export default function GitHubWorkspacePage() {
             </div>
 
             <div className="github-repo-toolbar">
-              <div><h2>Repositórios</h2><p>{repositories.length} carregados · exportação em ZIP</p></div>
+              <div><h2>Repositórios</h2><p>{repositories.length} carregados · importe para editar ou baixe ZIP</p></div>
               <label className="github-search"><Search size={16}/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar repositório..." /></label>
             </div>
 
@@ -120,6 +152,7 @@ export default function GitHubWorkspacePage() {
                       <div className="github-repo-owner">{repo.owner} / {repo.name}</div>
                       <p className="github-repo-description">{repo.description || 'Sem descrição.'}</p>
                       <div className="github-repo-meta"><span>Branch: <b>{repo.defaultBranch}</b></span><a href={repo.url} target="_blank" rel="noreferrer" aria-label={`Abrir ${repo.fullName} no GitHub`}><ExternalLink size={14}/></a></div>
+                      <button className="github-import-button" onClick={() => importRepository(repo)} disabled={Boolean(importing)}>{importing === repo.fullName ? <><LoaderCircle className="github-spin" size={16}/> Importando...</> : <><Import size={16}/> Importar para o Vynex</>}</button>
                       <a className="github-download-button" href={downloadUrl}><Download size={16}/> Baixar ZIP</a>
                     </article>
                   );
