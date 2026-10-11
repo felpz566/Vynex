@@ -75,14 +75,14 @@ export default function GitHubWorkspacePage() {
           <div className="github-panel">
             <div className="github-panel-icon"><LockKeyhole size={21}/></div>
             <h2>Falta configurar a integração</h2>
-            <p>Adicione as variáveis da GitHub App na Vercel e publique um novo deploy. Os nomes e URLs estão documentados no README do repositório.</p>
+            <p>Adicione as variáveis do OAuth App na Vercel e publique um novo deploy. Os nomes e URLs estão documentados no README do repositório.</p>
             <a className="github-secondary-button" href="https://github.com/felpz566/Vynex#github-repository-connection-and-zip-export" target="_blank" rel="noreferrer">Ver instruções <ExternalLink size={15}/></a>
           </div>
         ) : !status.connected ? (
           <div className="github-panel github-connect-panel">
             <div className="github-panel-icon"><Github size={23}/></div>
             <h2>Conecte sua conta GitHub</h2>
-            <p>O Vynex só poderá ler os repositórios permitidos na configuração da GitHub App. Não conceda permissões de escrita.</p>
+            <p>O Vynex solicita o escopo repo para ler repositórios privados e enviar arquivos por push. Confira as permissões na tela de autorização antes de continuar.</p>
             <a className="github-primary-button" href="/api/integrations/github/start"><Github size={17}/> Conectar com GitHub</a>
             <div className="github-security-note"><ShieldCheck size={15}/> Token protegido no servidor; nunca exibido no navegador.</div>
           </div>
