@@ -30,6 +30,7 @@ export default function VisualDesignPage() {
   const [device, setDevice] = useState('desktop');
   const [notice, setNotice] = useState('');
   const [background, setBackground] = useState('#11131c');
+  const [controlStates, setControlStates] = useState({});
   const selected = elements.find((item) => item.id === selectedId) || null;
   const activeProject = projects.find((item) => item.id === activeId) || null;
 
@@ -74,9 +75,9 @@ export default function VisualDesignPage() {
   const addElement = (type) => {
     const item = {
       id: makeId(), type,
-      text: type === 'heading' ? 'Novo título' : type === 'text' ? 'Escreva seu texto aqui.' : type === 'button' ? 'Clique aqui' : type === 'image' ? 'https://placehold.co/640x360' : '',
+      text: type === 'heading' ? 'Novo título' : type === 'text' ? 'Escreva seu texto aqui.' : type === 'button' ? 'Clique aqui' : type === 'image' ? 'https://placehold.co/640x360' : type === 'toggle' ? 'Ativar notificações' : type === 'checkbox' ? 'Aceito os termos' : type === 'tabs' ? 'Início, Sobre, Contato' : '',
       x: 0, y: elements.length, width: 100, color: type === 'button' ? '#ffffff' : '#f8fafc',
-      background: type === 'button' ? '#8b5cf6' : 'transparent',
+      background: ['button', 'toggle', 'checkbox', 'tabs'].includes(type) ? '#8b5cf6' : 'transparent',
       fontSize: type === 'heading' ? 28 : type === 'button' ? 14 : 16,
       align: 'center',
     };
@@ -103,6 +104,15 @@ export default function VisualDesignPage() {
     const style = { color: item.color, fontSize: `${Number(item.fontSize) || 16}px`, textAlign: item.align || 'left', width: item.width + '%', margin: '12px auto', fontWeight: item.type === 'heading' ? 750 : 400, outline: selectedId === item.id ? '1px solid #a78bfa' : '1px solid transparent', outlineOffset: '4px', cursor: 'pointer' };
     const selectElement = (event) => { event.stopPropagation(); setSelectedId(item.id); };
     if (item.type === 'button') return <button key={item.id} style={{ ...style, background: item.background || '#8b5cf6', border: 0, borderRadius: 9, padding: '12px 20px', cursor: 'pointer' }} onClick={selectElement}>{item.text}</button>;
+    if (item.type === 'toggle') {
+      const checked = Boolean(controlStates[item.id]);
+      return <div key={item.id} style={{ ...style, display: 'flex', alignItems: 'center', justifyContent: item.align === 'left' ? 'flex-start' : item.align === 'right' ? 'flex-end' : 'center', gap: 10 }} onClick={(event) => { event.stopPropagation(); setSelectedId(item.id); setControlStates((state) => ({ ...state, [item.id]: !state[item.id] })); }}><span>{item.text}</span><span style={{ width: 42, height: 24, borderRadius: 20, background: checked ? (item.background || '#8b5cf6') : '#4b4d58', padding: 3, display: 'inline-flex', justifyContent: checked ? 'flex-end' : 'flex-start', boxSizing: 'border-box' }}><span style={{ width: 18, height: 18, borderRadius: '50%', background: '#fff' }} /></span></div>;
+    }
+    if (item.type === 'checkbox') {
+      const checked = Boolean(controlStates[item.id]);
+      return <label key={item.id} style={{ ...style, display: 'flex', alignItems: 'center', justifyContent: item.align === 'left' ? 'flex-start' : item.align === 'right' ? 'flex-end' : 'center', gap: 9, cursor: 'pointer' }} onClick={(event) => { event.stopPropagation(); setSelectedId(item.id); setControlStates((state) => ({ ...state, [item.id]: !state[item.id] })); }}><input type="checkbox" checked={checked} readOnly style={{ width: 17, height: 17, accentColor: item.background || '#8b5cf6' }}/>{item.text}</label>;
+    }
+    if (item.type === 'tabs') return <div key={item.id} style={{ ...style, display: 'flex', gap: 6, justifyContent: item.align === 'left' ? 'flex-start' : item.align === 'right' ? 'flex-end' : 'center', flexWrap: 'wrap' }} onClick={(event) => { event.stopPropagation(); setSelectedId(item.id); }}>{(item.text || 'Início, Sobre, Contato').split(',').map((tab, index) => <button key={index} onClick={(event) => { event.stopPropagation(); setSelectedId(item.id); setControlStates((state) => ({ ...state, [item.id]: index })); }} style={{ border: 0, borderRadius: 7, padding: '9px 13px', color: '#fff', background: (controlStates[item.id] ?? 0) === index ? (item.background || '#8b5cf6') : '#292b36', cursor: 'pointer' }}>{tab.trim()}</button>)}</div>;
     if (item.type === 'image') return <img key={item.id} src={item.text} alt="" style={{ ...style, display: 'block', maxWidth: '100%', height: 'auto', borderRadius: 12 }} onClick={selectElement} />;
     if (item.type === 'box') return <div key={item.id} style={{ width: item.width + '%', minHeight: 90, margin: '12px auto', background: item.background || '#262a3a', border: '1px solid #ffffff25', borderRadius: 12, outline: selectedId === item.id ? '1px solid #a78bfa' : '1px solid transparent', cursor: 'pointer' }} onClick={selectElement} />;
     if (item.type === 'heading') return <h1 key={item.id} style={style} onClick={selectElement}>{item.text}</h1>;
@@ -139,11 +149,14 @@ export default function VisualDesignPage() {
             <button onClick={() => addElement('button')}><MousePointer2 size={16}/><span>Botão</span></button>
             <button onClick={() => addElement('box')}><Square size={16}/><span>Bloco</span></button>
             <button onClick={() => addElement('image')}><ImageIcon size={16}/><span>Imagem</span></button>
+            <button onClick={() => addElement('toggle')}><span className="design-mini-toggle"/><span>Toggle</span></button>
+            <button onClick={() => addElement('checkbox')}><span className="design-mini-checkbox">✓</span><span>Checkbox</span></button>
+            <button onClick={() => addElement('tabs')}><Layers3 size={16}/><span>Abas</span></button>
           </div>
           <div className="design-panel-heading design-layers-heading">CAMADAS <span>{elements.length}</span></div>
           <div className="design-layer-list">
             {elements.map((item, index) => <button key={item.id} className={selectedId === item.id ? 'design-layer selected' : 'design-layer'} onClick={() => setSelectedId(item.id)}>
-              {item.type === 'heading' ? <Type size={14}/> : item.type === 'button' ? <MousePointer2 size={14}/> : item.type === 'image' ? <ImageIcon size={14}/> : <Square size={14}/>}
+              {item.type === 'heading' ? <Type size={14}/> : item.type === 'button' ? <MousePointer2 size={14}/> : item.type === 'image' ? <ImageIcon size={14}/> : item.type === 'toggle' ? <span className="design-mini-toggle"/> : item.type === 'checkbox' ? <span className="design-mini-checkbox">✓</span> : item.type === 'tabs' ? <Layers3 size={14}/> : <Square size={14}/>}
               <span>{item.text || (item.type === 'box' ? 'Bloco' : item.type)}</span><small>{index + 1}</small>
             </button>)}
             {!elements.length && <p className="design-empty">Adicione um elemento para começar.</p>}
@@ -178,7 +191,7 @@ export default function VisualDesignPage() {
             <label className="design-field"><span>Largura (%)</span><input type="number" min="10" max="100" value={selected.width} onChange={(event) => updateSelected('width', Math.max(10, Math.min(100, Number(event.target.value) || 10)))} /></label>
             {selected.type !== 'image' && selected.type !== 'box' && <label className="design-field"><span>Tamanho do texto</span><input type="number" min="10" max="96" value={selected.fontSize} onChange={(event) => updateSelected('fontSize', Math.max(10, Math.min(96, Number(event.target.value) || 16)))} /></label>}
             <label className="design-field"><span>Cor do texto</span><input type="color" value={/^#[0-9a-f]{6}$/i.test(selected.color || '') ? selected.color : '#ffffff'} onChange={(event) => updateSelected('color', event.target.value)} /></label>
-            {(selected.type === 'button' || selected.type === 'box') && <label className="design-field"><span>Cor de fundo</span><input type="color" value={/^#[0-9a-f]{6}$/i.test(selected.background || '') ? selected.background : '#262a3a'} onChange={(event) => updateSelected('background', event.target.value)} /></label>}
+            {(['button', 'box', 'toggle', 'checkbox', 'tabs'].includes(selected.type)) && <label className="design-field"><span>Cor de fundo / destaque</span><input type="color" value={/^#[0-9a-f]{6}$/i.test(selected.background || '') ? selected.background : '#262a3a'} onChange={(event) => updateSelected('background', event.target.value)} /></label>}
             <label className="design-field"><span>Alinhamento</span><select value={selected.align || 'left'} onChange={(event) => updateSelected('align', event.target.value)}><option value="left">Esquerda</option><option value="center">Centro</option><option value="right">Direita</option></select></label>
             <div className="design-property-actions">
               <button onClick={() => moveSelected(-1)} title="Mover para cima"><ChevronUp size={15}/></button>
