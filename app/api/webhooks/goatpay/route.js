@@ -69,10 +69,13 @@ export async function POST(request) {
   }
 
   const data = event?.data || {};
+  if (data.type !== 'PIX_IN' || data.status !== 'COMPLETED') {
+    return Response.json({ received: true, ignored: true }, { status: 200 });
+  }
   const externalReference = typeof data.externalReference === 'string' ? data.externalReference : '';
   const paymentId = typeof data.id === 'string' ? data.id : '';
   const amount = Number(data.amount);
-  if (!externalReference || !Number.isFinite(amount) || amount <= 0) {
+  if (!externalReference || !paymentId || !Number.isFinite(amount) || amount <= 0) {
     return Response.json({ received: true, ignored: true, reason: 'missing_payment_fields' }, { status: 200 });
   }
 
