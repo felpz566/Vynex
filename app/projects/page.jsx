@@ -222,7 +222,7 @@ export default function ProjectsPage() {
   };
 
   useEffect(() => {
-    if (!buildRepo || !buildStatus || !['queued', 'in_progress', 'requested', 'waiting', 'pending'].includes(buildStatus.status)) return;
+    if (!buildRepo || !buildStatus || (!['queued', 'in_progress', 'requested', 'waiting', 'pending'].includes(buildStatus.status) && !(buildStatus.status === 'completed' && buildStatus.conclusion === 'success' && !buildStatus.artifactId))) return;
     let cancelled = false;
     const timer = setTimeout(async () => {
       try {
