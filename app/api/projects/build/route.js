@@ -59,7 +59,7 @@ function generatedHtml(projectName, files) {
     try {
       const design = JSON.parse(Buffer.from(designFile.contentBase64, 'base64').toString('utf8'));
       const background = /^#[0-9a-f]{6}$/i.test(design.background || '') ? design.background : '#11131c';
-      const elements = Array.isArray(design.elements) ? design.elements.slice(0, 100) : [];
+      const elements = Array.isArray(design.elements) ? design.elements.filter((item) => item?.visible !== false).slice(0, 100) : [];
       const content = elements.map((item) => {
         const color = /^#[0-9a-f]{6}$/i.test(item.color || '') ? item.color : '#f8fafc';
         const bg = /^#[0-9a-f]{6}$/i.test(item.background || '') ? item.background : '#8b5cf6';
