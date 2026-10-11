@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Eye, EyeOff, Layers3, Monitor, Save, Smartphone, Trash2, Type, Square, Image as ImageIcon, MousePointer2, ChevronUp, ChevronDown, Lock, Unlock, Copy } from 'lucide-react';
 import './design.css';
+import VynexAI from '../../../src/components/VynexAI.jsx';
 
 const STORAGE_KEY = 'vynex.projects.v1';
 const DESIGN_PATH = 'vynex-design.json';
@@ -197,6 +198,38 @@ export default function VisualDesignPage() {
     </div>;
   }), [elements, controlStates, selectedId]);
 
+
+  const applyAiChanges = (changes) => {
+    if (!activeProject || !Array.isArray(changes)) return;
+    const nextFiles = [...(activeProject.files || [])];
+    for (const change of changes) {
+      const encoded = encodeBase64(change.content);
+      const size = new TextEncoder().encode(change.content).length;
+      const index = nextFiles.findIndex((file) => file.path === change.path);
+      const nextFile = { path: change.path, contentBase64: encoded, size };
+      if (index >= 0) nextFiles[index] = nextFile;
+      else nextFiles.push(nextFile);
+      if (change.path === DESIGN_PATH) {
+        try {
+          const design = JSON.parse(change.content);
+          if (Array.isArray(design.elements)) {
+            setElements(design.elements);
+            setSelectedId(design.elements[0]?.id || '');
+          }
+          if (typeof design.background === 'string') setBackground(design.background);
+        } catch {}
+      }
+    }
+    const nextProjects = projects.map((project) => project.id === activeId
+      ? { ...project, files: nextFiles, updatedAt: Date.now() }
+      : project);
+    setProjects(nextProjects);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(nextProjects)); } catch {
+      setNotice('O design foi aplicado na sessão, mas o navegador não conseguiu salvar o rascunho local.');
+    }
+    setNotice('Design aplicado ao rascunho. Confira a prévia e clique em Salvar para confirmar.');
+  };
+
   if (!projectLoaded) return <main className="vynex-design-loading">Abrindo editor visual…</main>;
 
   return (
@@ -295,6 +328,7 @@ export default function VisualDesignPage() {
           </div>
         </aside>
       </div>
+      <div className="design-ai-wrap"><VynexAI key={activeId} projectName={activeProject?.name || ''} files={activeProject?.files || []} mode="design" onApply={applyAiChanges} /></div>
     </main>
   );
 }
