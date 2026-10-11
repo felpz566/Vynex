@@ -32,7 +32,7 @@ export default function LoginPage() {
         <h1>Seus projetos.<br/><span>Em qualquer dispositivo.</span></h1>
         <p className="login-description">Entre para acessar sua conta Vynex. A conexão com Google e a conexão com GitHub são independentes.</p>
 
-        {status?.connected && <div className="login-connected"><CheckCircle2 size={17}/><span>Google conectado como <b>{status.email}</b></span></div>}
+        {status?.connected && <div className="login-connected"><CheckCircle2 size={17}/><span>Google conectado como <b>{status.email}</b></span><form method="post" action="/api/auth/google/logout"><button type="submit">Sair</button></form></div>}
         {error && <div className="login-error">{error}</div>}
 
         <div className="login-providers">
