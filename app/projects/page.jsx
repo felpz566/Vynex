@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft, Check, CloudUpload, FileCode2, FilePlus2, FolderOpen,
   Github, HardDrive, LoaderCircle, LockKeyhole, Mail, Plus, RefreshCw,
-  Save, Search, Upload, X, Package, Download, Monitor, CircleCheck, CircleAlert,
+  Save, Search, Upload, X, Package, Download, Monitor, CircleCheck, CircleAlert, Palette,
 } from 'lucide-react';
 import JSZip from 'jszip';
 import './projects.css';
@@ -34,10 +34,18 @@ function starterProject(name = 'meu-projeto') {
         size: 0,
       },
       {
-        path: 'index.html',
-        contentBase64: btoa(unescape(encodeURIComponent('<!doctype html>\n<html lang="pt-BR">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>Meu projeto</title>\n</head>\n<body>\n  <main><h1>Olá, mundo!</h1><p>Este projeto começou no Vynex.</p></main>\n</body>\n</html>\n'))),
+        path: 'vynex-design.json',
+        contentBase64: btoa(unescape(encodeURIComponent(JSON.stringify({
+          version: 1,
+          background: '#11131c',
+          elements: [
+            { id: 'hero-title', type: 'heading', text: 'Crie algo incrível', x: 0, y: 0, width: 100, color: '#f8fafc', fontSize: 38, align: 'center' },
+            { id: 'hero-copy', type: 'text', text: 'Transforme suas ideias em um aplicativo de verdade.', x: 0, y: 1, width: 100, color: '#b8c0d4', fontSize: 16, align: 'center' },
+            { id: 'hero-button', type: 'button', text: 'Começar agora', x: 0, y: 2, width: 100, color: '#ffffff', background: '#8b5cf6', fontSize: 14, align: 'center' }
+          ]
+        }, null, 2)))),
         size: 0,
-      },
+      },,
     ],
     updatedAt: Date.now(),
   };
@@ -356,6 +364,7 @@ export default function ProjectsPage() {
               <div className="projects-actions-row">
                 <div className="projects-action-copy"><span className="projects-action-icon"><FolderOpen size={18}/></span><div><b>Arquivos do projeto</b><small>{activeProject.files.length} arquivo(s) · salvos no navegador</small></div></div>
                 <div className="projects-file-actions">
+                  <a className="projects-design-button" href={`/projects/design?project=${encodeURIComponent(activeId)}`}><Palette size={15}/> Editor visual</a>
                   <button onClick={() => fileInput.current?.click()}><Upload size={15}/> Arquivos</button>
                   <button onClick={() => folderInput.current?.click()}><FolderOpen size={15}/> Pasta</button>
                   <button onClick={() => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(projects)); setNotice('Rascunho salvo neste dispositivo.'); } catch { setError('Não há espaço suficiente no armazenamento local.'); } }}><Save size={15}/> Salvar</button>
@@ -378,7 +387,7 @@ export default function ProjectsPage() {
               <section className="projects-build-panel">
                 <div className="projects-build-heading">
                   <span className="projects-build-icon"><Monitor size={19}/></span>
-                  <div><h2>Compilar aplicativo para Windows</h2><p>Gera um instalador .exe para projetos web HTML, CSS e JavaScript, sem ferramentas locais.</p></div>
+                  <div><h2>Compilar aplicativo para Windows</h2><p>Gera um instalador .exe a partir do seu design ou dos arquivos web. Não precisa criar index.html.</p></div>
                 </div>
                 <div className="projects-build-actions">
                   <button className="projects-build-button" onClick={startBuild} disabled={buildBusy || downloadBusy || !activeProject.files.length}>
