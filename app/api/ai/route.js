@@ -83,12 +83,12 @@ async function consumeCredit(identity) {
   return result;
 }
 
-async function refundCredit(identity) {
+async function refundCredit(identity, source = 'daily') {
   if (identity.isAdmin) return;
   try {
     await db('rpc/vynex_refund_ai_credit', {
       method: 'POST',
-      body: { p_identity_key: identity.identityKey },
+      body: { p_identity_key: identity.identityKey, p_source: source === 'extra' ? 'extra' : 'daily' },
     });
   } catch {}
 }
@@ -97,21 +97,22 @@ async function currentUsage(identity) {
   if (identity.isAdmin) {
     const usageDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
     return {
-      plan: 'admin', admin: true, limit: null, used: 0, remaining: null, usageDate,
+      plan: 'admin', admin: true, limit: null, used: 0, remaining: null, extraCredits: 0, usageDate,
       resetsAt: new Date(Date.parse(usageDate + 'T00:00:00-03:00') + 86400000).toISOString(),
     };
   }
   const today = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit',
   }).format(new Date());
-  const [planRows, usageRows] = await Promise.all([
+  const [planRows, usageRows, extraRows] = await Promise.all([
     db('vynex_ai_plans?select=plan&identity_key=eq.' + encodeURIComponent(identity.identityKey) + '&limit=1'),
     db('vynex_ai_daily_usage?select=credits_used&identity_key=eq.' + encodeURIComponent(identity.identityKey) + '&usage_date=eq.' + today + '&limit=1'),
+    db('vynex_ai_extra_credits?select=credits_balance&identity_key=eq.' + encodeURIComponent(identity.identityKey) + '&limit=1'),
   ]);
   const plan = planRows?.[0]?.plan || 'free';
   const limit = ({ free: 3, plus: 15, pro: 50, studio: 300 })[plan] || 3;
   const used = Number(usageRows?.[0]?.credits_used || 0);
-  return { plan, admin: false, limit, used, remaining: Math.max(0, limit - used), usageDate: today, resetsAt: new Date(Date.parse(today + 'T00:00:00-03:00') + 86400000).toISOString() };
+  return { plan, admin: false, limit, used, remaining: Math.max(0, limit - used), extraCredits: Number(extraRows?.[0]?.credits_balance || 0), usageDate: today, resetsAt: new Date(Date.parse(today + 'T00:00:00-03:00') + 86400000).toISOString() };
 }
 
 function cleanFiles(input) {
@@ -264,7 +265,7 @@ async function propose(request, identity, body, onStage = async () => {}) {
       summary = String(review.summary || summary).slice(0, 1000);
       if (!checks.some((item) => item?.status === 'failed')) break;
       if (pass === 2) {
-        await refundCredit(identity);
+        await refundCredit(identity, usage?.source || 'daily');
         return jsonError('A revisão ainda encontrou problemas após 3 passagens. Nenhuma alteração foi aplicada. Detalhes: ' + checks.filter((item) => item?.status === 'failed').map((item) => item.detail).join(' | ').slice(0, 700), 422);
       }
       if (mode === 'code') await onStage(4);
@@ -302,7 +303,7 @@ async function propose(request, identity, body, onStage = async () => {}) {
         : ['Analisando solicitação', 'Planejando alterações', 'Programando', 'Verificando código', 'Corrigindo e revisando', 'Aguardando aprovação'],
     }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
-    if (usage?.allowed && !proposalSaved) await refundCredit(identity);
+    if (usage?.allowed && !proposalSaved) await refundCredit(identity, usage?.source || 'daily');
     return jsonError('A IA não conseguiu concluir a revisão: ' + String(error.message || 'erro inesperado').slice(0, 700), error.status || 502);
   }
 }
