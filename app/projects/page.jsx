@@ -395,7 +395,7 @@ export default function ProjectsPage() {
                   {buildStatus?.status === 'completed' && buildStatus?.conclusion === 'success' && !buildStatus.artifactId && <span className="projects-build-running">Instalador finalizado; preparando artefato…</span>}
                   {buildStatus?.runUrl && <a className="projects-build-logs" href={buildStatus.runUrl} target="_blank" rel="noreferrer">Ver ambiente de build / logs</a>}
                 </div>
-                <p className="projects-build-note"><LockKeyhole size={13}/> Usa um repositório temporário privado no GitHub para compilar. O primeiro build pode levar alguns minutos. Requer GitHub Actions habilitado.</p>
+                <p className="projects-build-note"><LockKeyhole size={13}/> Usa um repositório privado de build na sua conta GitHub; ele permanece lá para você poder apagar depois. O primeiro build pode levar alguns minutos e requer GitHub Actions habilitado.</p>
                 {buildError && <div className="projects-build-error"><CircleAlert size={14}/><span>{buildError}{buildError.includes('permissões') || buildError.includes('Reautorize') ? <> <a href="/api/integrations/github/start?next=%2Fprojects">Reconectar GitHub</a></> : null}</span></div>}
                 {buildStatus?.status === 'completed' && buildStatus?.conclusion === 'success' && <div className="projects-build-success"><CircleCheck size={14}/> Build concluído com sucesso. O arquivo .exe está pronto.</div>}
               </section>
