@@ -2,6 +2,7 @@ import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 
 export const GITHUB_SESSION_COOKIE = 'vynex_github_session';
 export const GITHUB_STATE_COOKIE = 'vynex_github_oauth_state';
+export const GITHUB_RETURN_COOKIE = 'vynex_github_return';
 
 function getKey() {
   const value = process.env.GITHUB_SESSION_SECRET;
