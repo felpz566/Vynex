@@ -10,7 +10,7 @@ const MAX_TOTAL_BYTES = 3 * 1024 * 1024;
 
 function validPath(path) {
   if (typeof path !== 'string' || !path || path.length > 240) return false;
-  if (path.startsWith('/') || path.includes('\\\\') || path.includes('\\0')) return false;
+  if (path.startsWith('/') || path.includes(String.fromCharCode(92)) || path.includes(String.fromCharCode(0))) return false;
   return path.split('/').every((part) => part && part !== '.' && part !== '..' && !part.startsWith('.git'));
 }
 
