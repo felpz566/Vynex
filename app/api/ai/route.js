@@ -83,6 +83,16 @@ async function consumeCredit(identity) {
   return result;
 }
 
+async function refundCredit(identity) {
+  if (identity.isAdmin) return;
+  try {
+    await db('rpc/vynex_refund_ai_credit', {
+      method: 'POST',
+      body: { p_identity_key: identity.identityKey },
+    });
+  } catch {}
+}
+
 async function currentUsage(identity) {
   if (identity.isAdmin) {
     const usageDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
@@ -228,6 +238,7 @@ async function propose(request, identity, body, onStage = async () => {}) {
     ? 'Você é um designer de produto sênior. Planeje hierarquia visual, espaçamento, contraste, acessibilidade e uma composição visual coesa. Não alegue inspeção visual real de screenshot; faça uma revisão estrutural do JSON.'
     : 'Você é um engenheiro de software sênior. Leia o contexto atual, preserve APIs existentes, prefira alterações pequenas, seguras e consistentes, sem placeholders. Revise mentalmente os erros de sintaxe e integração antes de responder. Não afirme que rodou compilador ou testes.';
   let generated;
+  let proposalSaved = false;
   try {
     await onStage(1);
     await onStage(2);
@@ -252,7 +263,10 @@ async function propose(request, identity, body, onStage = async () => {}) {
       reviewNotes = String(review.reviewNotes || reviewNotes);
       summary = String(review.summary || summary).slice(0, 1000);
       if (!checks.some((item) => item?.status === 'failed')) break;
-      if (pass === 2) return jsonError('A revisão ainda encontrou problemas após 3 passagens. Nenhuma alteração foi aplicada. Detalhes: ' + checks.filter((item) => item?.status === 'failed').map((item) => item.detail).join(' | ').slice(0, 700), 422);
+      if (pass === 2) {
+        await refundCredit(identity);
+        return jsonError('A revisão ainda encontrou problemas após 3 passagens. Nenhuma alteração foi aplicada. Detalhes: ' + checks.filter((item) => item?.status === 'failed').map((item) => item.detail).join(' | ').slice(0, 700), 422);
+      }
       if (mode === 'code') await onStage(4);
     }
     await onStage(mode === 'design' ? 4 : 5);
@@ -269,6 +283,8 @@ async function propose(request, identity, body, onStage = async () => {}) {
       prefer: 'return=representation',
     });
     const created = Array.isArray(proposal) ? proposal[0] : proposal;
+    if (!created?.id) throw new Error('O banco não confirmou a criação da proposta.');
+    proposalSaved = true;
     return Response.json({
       proposal: {
         id: created.id,
@@ -286,6 +302,7 @@ async function propose(request, identity, body, onStage = async () => {}) {
         : ['Analisando solicitação', 'Planejando alterações', 'Programando', 'Verificando código', 'Corrigindo e revisando', 'Aguardando aprovação'],
     }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
+    if (usage?.allowed && !proposalSaved) await refundCredit(identity);
     return jsonError('A IA não conseguiu concluir a revisão: ' + String(error.message || 'erro inesperado').slice(0, 700), error.status || 502);
   }
 }
