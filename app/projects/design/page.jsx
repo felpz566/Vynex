@@ -9,8 +9,8 @@ const DESIGN_PATH = 'vynex-design.json';
 
 const STARTER = [
   { id: 'hero-title', type: 'heading', text: 'Crie algo incrível', x: 0, y: 0, width: 100, color: '#f8fafc', fontSize: 38, align: 'center' },
-  { id: 'hero-copy', type: 'text', text: 'Transforme suas ideias em um aplicativo de verdade.', x: 0, y: 1, width: 100, color: '#b8c0d4', fontSize: 16, align: 'center' },
-  { id: 'hero-button', type: 'button', text: 'Começar agora', x: 0, y: 2, width: 100, color: '#ffffff', background: '#8b5cf6', fontSize: 14, align: 'center' },
+  { id: 'hero-copy', type: 'text', text: 'Transforme suas ideias em um aplicativo de verdade.', x: 0, y: 0, width: 100, color: '#b8c0d4', fontSize: 16, align: 'center' },
+  { id: 'hero-button', type: 'button', text: 'Começar agora', x: 0, y: 0, width: 100, color: '#ffffff', background: '#8b5cf6', fontSize: 14, align: 'center' },
 ];
 
 function decodeBase64(value) {
@@ -78,7 +78,7 @@ export default function VisualDesignPage() {
     const item = {
       id: makeId(), type,
       text: type === 'heading' ? 'Novo título' : type === 'text' ? 'Escreva seu texto aqui.' : type === 'button' ? 'Clique aqui' : type === 'image' ? 'https://placehold.co/640x360' : type === 'toggle' ? 'Ativar notificações' : type === 'checkbox' ? 'Aceito os termos' : type === 'tabs' ? 'Início, Sobre, Contato' : '',
-      x: 0, y: elements.length, width: 100, color: type === 'button' ? '#ffffff' : '#f8fafc',
+      x: 0, y: 0, width: 100, color: type === 'button' ? '#ffffff' : '#f8fafc',
       background: ['button', 'toggle', 'checkbox', 'tabs'].includes(type) ? '#8b5cf6' : 'transparent',
       fontSize: type === 'heading' ? 28 : type === 'button' ? 14 : 16,
       align: 'center',
@@ -106,7 +106,7 @@ export default function VisualDesignPage() {
     event.preventDefault();
     event.stopPropagation();
     setSelectedId(id);
-    dragRef.current = { mode: 'move', id, lastTarget: id };
+    dragRef.current = { mode: 'move', id, startX: event.clientX, startY: event.clientY, startLeft: Number(elements.find((item) => item.id === id)?.x) || 0, startTop: Number(elements.find((item) => item.id === id)?.y) || 0 };
   };
 
   const beginCanvasResize = (event, item) => {
@@ -128,19 +128,11 @@ export default function VisualDesignPage() {
         setElements((current) => current.map((item) => item.id === drag.id ? { ...item, width } : item));
         return;
       }
-      const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-vynex-element]');
-      const targetId = target?.getAttribute('data-vynex-element');
-      if (!targetId || targetId === drag.id || targetId === drag.lastTarget) return;
-      setElements((current) => {
-        const from = current.findIndex((item) => item.id === drag.id);
-        const to = current.findIndex((item) => item.id === targetId);
-        if (from < 0 || to < 0 || from === to) return current;
-        const next = [...current];
-        const moved = next.splice(from, 1)[0];
-        next.splice(to, 0, moved);
-        drag.lastTarget = targetId;
-        return next;
-      });
+      const deltaX = event.clientX - drag.startX;
+      const deltaY = event.clientY - drag.startY;
+      setElements((current) => current.map((item) => item.id === drag.id
+        ? { ...item, x: Math.max(-2000, Math.min(2000, Math.round(drag.startLeft + deltaX))), y: Math.max(-2000, Math.min(2000, Math.round(drag.startTop + deltaY))) }
+        : item));
     };
     const onPointerUp = () => { dragRef.current = null; };
     window.addEventListener('pointermove', onPointerMove);
@@ -170,7 +162,7 @@ export default function VisualDesignPage() {
     if (item.type === 'heading') return <h1 key={item.id} style={style} onClick={selectElement}>{item.text}</h1>;
     return <p key={item.id} style={style} onClick={selectElement}>{item.text}</p>;
     })();
-    return <div key={item.id} data-vynex-element={item.id} className={selectedId === item.id ? 'design-canvas-element selected' : 'design-canvas-element'} style={{ width: (Math.max(10, Math.min(100, Number(item.width) || 100))) + '%', margin: '12px auto', position: 'relative' }}>
+    return <div key={item.id} data-vynex-element={item.id} className={selectedId === item.id ? 'design-canvas-element selected' : 'design-canvas-element'} style={{ width: (Math.max(10, Math.min(100, Number(item.width) || 100))) + '%', margin: '12px auto', position: 'relative', transform: 'translate(' + (Number(item.x) || 0) + 'px, ' + (Number(item.y) || 0) + 'px)' }}>
       {selectedId === item.id && <button type="button" className="design-drag-handle" title="Arraste para mover a camada" onPointerDown={(event) => beginCanvasMove(event, item.id)} aria-label="Mover elemento">⠿</button>}
       {node}
       {selectedId === item.id && <button type="button" className="design-resize-handle" title="Arraste para redimensionar" onPointerDown={(event) => beginCanvasResize(event, item)} aria-label="Redimensionar elemento">↘</button>}
