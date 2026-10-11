@@ -127,7 +127,7 @@ export async function POST(request) {
       productName: projectName.replace(/[^A-Za-z0-9 _-]/g, '').slice(0, 60) || 'Vynex App',
       directories: { output: 'dist' },
       files: ['main.cjs', 'app/**/*', 'package.json'],
-      win: { target: ['nsis'], artifactName: '${projectName}-Setup-${version}.${ext}' },
+      win: { target: ['nsis'], artifactName: '\${productName}-Setup-\${version}.\${ext}' },
       nsis: { oneClick: true, perMachine: false, allowToChangeInstallationDirectory: false, createDesktopShortcut: true, createStartMenuShortcut: true }
     }
   }, null, 2);
