@@ -71,7 +71,6 @@ export default function ProjectsPage() {
   const [error, setError] = useState('');
   const [resultUrl, setResultUrl] = useState('');
   const [buildBusy, setBuildBusy] = useState(false);
-  const [enableExeBuild, setEnableExeBuild] = useState(false);
   const [buildRepo, setBuildRepo] = useState('');
   const [buildStatus, setBuildStatus] = useState(null);
   const [buildError, setBuildError] = useState('');
@@ -385,8 +384,7 @@ export default function ProjectsPage() {
                 <button className="projects-dropzone" onClick={() => fileInput.current?.click()}><CloudUpload size={22}/><b>Adicionar arquivos do dispositivo</b><span>Computador ou celular · até 2 MB por arquivo</span></button>
               </div>
 
-              <label className="projects-exe-optin"><input type="checkbox" checked={enableExeBuild} onChange={(event) => setEnableExeBuild(event.target.checked)}/><span><b>Quero gerar um instalador .exe</b><small>Opcional. Se deixar desmarcado, continue programando e exporte/envie seus arquivos manualmente depois.</small></span></label>
-              {enableExeBuild && <section className="projects-build-panel">
+              <section className="projects-build-panel">
                 <div className="projects-build-heading">
                   <span className="projects-build-icon"><Monitor size={19}/></span>
                   <div><h2>Compilar aplicativo para Windows</h2><p>Gera um instalador .exe a partir do seu design ou dos arquivos web. Não precisa criar index.html.</p></div>
@@ -409,7 +407,7 @@ export default function ProjectsPage() {
                 <p className="projects-build-note"><LockKeyhole size={13}/> Usa um repositório privado de build na sua conta GitHub; ele permanece lá para você poder apagar depois. O primeiro build pode levar alguns minutos e requer GitHub Actions habilitado.</p>
                 {buildError && <div className="projects-build-error"><CircleAlert size={14}/><span>{buildError}{buildError.includes('permissões') || buildError.includes('Reautorize') ? <> <a href="/api/integrations/github/start?next=%2Fprojects">Reconectar GitHub</a></> : null}</span></div>}
                 {buildStatus?.status === 'completed' && buildStatus?.conclusion === 'success' && <div className="projects-build-success"><CircleCheck size={14}/> Build concluído com sucesso. O arquivo .exe está pronto.</div>}
-              </section>}
+              </section>
 
               <ProjectTerminal
                 projectName={activeProject.name}
