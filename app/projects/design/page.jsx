@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Eye, Layers3, Monitor, Plus, Save, Smartphone, Trash2, Type, Square, Image as ImageIcon, MousePointer2, Move, ChevronUp, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Layers3, Monitor, Plus, Save, Smartphone, Trash2, Type, Square, Image as ImageIcon, MousePointer2, Move, ChevronUp, ChevronDown, Lock, Unlock, Copy, AlignCenter } from 'lucide-react';
 import './design.css';
 
 const STORAGE_KEY = 'vynex.projects.v1';
@@ -31,6 +31,7 @@ export default function VisualDesignPage() {
   const [notice, setNotice] = useState('');
   const [background, setBackground] = useState('#11131c');
   const [controlStates, setControlStates] = useState({});
+  const [snapGuides, setSnapGuides] = useState({ x: false, y: false });
   const dragRef = useRef(null);
   const canvasRef = useRef(null);
   const selected = elements.find((item) => item.id === selectedId) || null;
@@ -96,6 +97,25 @@ export default function VisualDesignPage() {
     [next[index], next[target]] = [next[target], next[index]];
     setElements(next);
   };
+  const duplicateSelected = () => {
+    if (!selected) return;
+    const copy = { ...selected, id: makeId(), x: (Number(selected.x) || 0) + 16, y: (Number(selected.y) || 0) + 16 };
+    const index = elements.findIndex((item) => item.id === selectedId);
+    const next = [...elements];
+    next.splice(index + 1, 0, copy);
+    setElements(next);
+    setSelectedId(copy.id);
+    setNotice('Elemento duplicado.');
+  };
+  const toggleElementFlag = (id, key) => setElements((current) => current.map((item) => item.id === id ? { ...item, [key]: item[key] === false ? true : false } : item));
+  const moveLayerById = (id, direction) => {
+    const index = elements.findIndex((item) => item.id === id);
+    const target = index + direction;
+    if (index < 0 || target < 0 || target >= elements.length) return;
+    const next = [...elements];
+    [next[index], next[target]] = [next[target], next[index]];
+    setElements(next);
+  };
   const removeSelected = () => {
     const next = elements.filter((item) => item.id !== selectedId);
     setElements(next);
@@ -106,13 +126,16 @@ export default function VisualDesignPage() {
     event.preventDefault();
     event.stopPropagation();
     setSelectedId(id);
-    dragRef.current = { mode: 'move', id, startX: event.clientX, startY: event.clientY, startLeft: Number(elements.find((item) => item.id === id)?.x) || 0, startTop: Number(elements.find((item) => item.id === id)?.y) || 0 };
+    const item = elements.find((entry) => entry.id === id);
+    if (item?.locked) return;
+    dragRef.current = { mode: 'move', id, startX: event.clientX, startY: event.clientY, startLeft: Number(item?.x) || 0, startTop: Number(item?.y) || 0 };
   };
 
   const beginCanvasResize = (event, item) => {
     event.preventDefault();
     event.stopPropagation();
     setSelectedId(item.id);
+    if (item.locked) return;
     dragRef.current = { mode: 'resize', id: item.id, startX: event.clientX, startWidth: Number(item.width) || 100 };
   };
 
@@ -128,13 +151,18 @@ export default function VisualDesignPage() {
         setElements((current) => current.map((item) => item.id === drag.id ? { ...item, width } : item));
         return;
       }
-      const deltaX = event.clientX - drag.startX;
-      const deltaY = event.clientY - drag.startY;
-      setElements((current) => current.map((item) => item.id === drag.id
-        ? { ...item, x: Math.max(-2000, Math.min(2000, Math.round(drag.startLeft + deltaX))), y: Math.max(-2000, Math.min(2000, Math.round(drag.startTop + deltaY))) }
-        : item));
+      const rawX = drag.startLeft + (event.clientX - drag.startX);
+      const rawY = drag.startTop + (event.clientY - drag.startY);
+      const snap = (value) => {
+        const grid = Math.round(value / 8) * 8;
+        return Math.abs(value) <= 10 ? 0 : grid;
+      };
+      const x = Math.max(-2000, Math.min(2000, snap(rawX)));
+      const y = Math.max(-2000, Math.min(2000, snap(rawY)));
+      setSnapGuides({ x: Math.abs(x) <= 8, y: Math.abs(y) <= 8 });
+      setElements((current) => current.map((item) => item.id === drag.id ? { ...item, x, y } : item));
     };
-    const onPointerUp = () => { dragRef.current = null; };
+    const onPointerUp = () => { dragRef.current = null; setSnapGuides({ x: false, y: false }); };
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp);
     return () => {
@@ -143,7 +171,7 @@ export default function VisualDesignPage() {
     };
   }, []);
 
-  const generatedMarkup = useMemo(() => elements.map((item) => {
+  const generatedMarkup = useMemo(() => elements.filter((item) => item.visible !== false).map((item) => {
     const node = (() => {
     const style = { color: item.color, fontSize: `${Number(item.fontSize) || 16}px`, textAlign: item.align || 'left', width: '100%', margin: '0', fontWeight: item.type === 'heading' ? 750 : 400, outline: selectedId === item.id ? '1px solid #a78bfa' : '1px solid transparent', outlineOffset: '4px', cursor: 'pointer' };
     const selectElement = (event) => { event.stopPropagation(); setSelectedId(item.id); };
@@ -163,9 +191,9 @@ export default function VisualDesignPage() {
     return <p key={item.id} style={style} onClick={selectElement}>{item.text}</p>;
     })();
     return <div key={item.id} data-vynex-element={item.id} className={selectedId === item.id ? 'design-canvas-element selected' : 'design-canvas-element'} style={{ width: (Math.max(10, Math.min(100, Number(item.width) || 100))) + '%', margin: '12px auto', position: 'relative', transform: 'translate(' + (Number(item.x) || 0) + 'px, ' + (Number(item.y) || 0) + 'px)' }}>
-      {selectedId === item.id && <button type="button" className="design-drag-handle" title="Arraste para mover a camada" onPointerDown={(event) => beginCanvasMove(event, item.id)} onClick={(event) => event.stopPropagation()} aria-label="Mover elemento">⠿</button>}
+      {selectedId === item.id && !item.locked && <button type="button" className="design-drag-handle" title="Arraste para mover a camada" onPointerDown={(event) => beginCanvasMove(event, item.id)} onClick={(event) => event.stopPropagation()} aria-label="Mover elemento">⠿</button>}
       {node}
-      {selectedId === item.id && <button type="button" className="design-resize-handle" title="Arraste para redimensionar" onPointerDown={(event) => beginCanvasResize(event, item)} onClick={(event) => event.stopPropagation()} aria-label="Redimensionar elemento">↘</button>}
+      {selectedId === item.id && !item.locked && <button type="button" className="design-resize-handle" title="Arraste para redimensionar" onPointerDown={(event) => beginCanvasResize(event, item)} onClick={(event) => event.stopPropagation()} aria-label="Redimensionar elemento">↘</button>}
     </div>;
   }), [elements, controlStates, selectedId]);
 
@@ -205,10 +233,18 @@ export default function VisualDesignPage() {
           </div>
           <div className="design-panel-heading design-layers-heading">CAMADAS <span>{elements.length}</span></div>
           <div className="design-layer-list">
-            {elements.map((item, index) => <button key={item.id} className={selectedId === item.id ? 'design-layer selected' : 'design-layer'} onClick={() => setSelectedId(item.id)}>
-              {item.type === 'heading' ? <Type size={14}/> : item.type === 'button' ? <MousePointer2 size={14}/> : item.type === 'image' ? <ImageIcon size={14}/> : item.type === 'toggle' ? <span className="design-mini-toggle"/> : item.type === 'checkbox' ? <span className="design-mini-checkbox">✓</span> : item.type === 'tabs' ? <Layers3 size={14}/> : <Square size={14}/>}
-              <span>{item.text || (item.type === 'box' ? 'Bloco' : item.type)}</span><small>{index + 1}</small>
-            </button>)}
+            {elements.map((item, index) => <div key={item.id} className={'design-layer-row' + (selectedId === item.id ? ' selected' : '') + (item.visible === false ? ' hidden-layer' : '')}>
+              <button className="design-layer" onClick={() => setSelectedId(item.id)} title={item.text || item.type}>
+                {item.type === 'heading' ? <Type size={14}/> : item.type === 'button' ? <MousePointer2 size={14}/> : item.type === 'image' ? <ImageIcon size={14}/> : item.type === 'toggle' ? <span className="design-mini-toggle"/> : item.type === 'checkbox' ? <span className="design-mini-checkbox">✓</span> : item.type === 'tabs' ? <Layers3 size={14}/> : <Square size={14}/>}
+                <span>{item.text || (item.type === 'box' ? 'Bloco' : item.type)}</span><small>{index + 1}</small>
+              </button>
+              <div className="design-layer-tools">
+                <button onClick={() => moveLayerById(item.id, -1)} disabled={index === 0} title="Subir camada" aria-label="Subir camada"><ChevronUp size={12}/></button>
+                <button onClick={() => moveLayerById(item.id, 1)} disabled={index === elements.length - 1} title="Descer camada" aria-label="Descer camada"><ChevronDown size={12}/></button>
+                <button onClick={() => toggleElementFlag(item.id, 'visible')} title={item.visible === false ? 'Mostrar camada' : 'Ocultar camada'} aria-label={item.visible === false ? 'Mostrar camada' : 'Ocultar camada'}>{item.visible === false ? <EyeOff size={12}/> : <Eye size={12}/>}</button>
+                <button onClick={() => toggleElementFlag(item.id, 'locked')} title={item.locked ? 'Desbloquear camada' : 'Bloquear camada'} aria-label={item.locked ? 'Desbloquear camada' : 'Bloquear camada'}>{item.locked ? <Lock size={12}/> : <Unlock size={12}/>}</button>
+              </div>
+            </div>)}
             {!elements.length && <p className="design-empty">Adicione um elemento para começar.</p>}
           </div>
           <p className="design-hint">Arraste ⠿ para mover e ↘ para redimensionar. Use as propriedades para ajustar o visual e salve para incluir no aplicativo.</p>
@@ -225,6 +261,8 @@ export default function VisualDesignPage() {
           <div className="design-stage">
             <div ref={canvasRef} className={device === 'mobile' ? 'design-canvas mobile' : 'design-canvas'} style={{ background }}>
               <div className="design-canvas-inner" onClick={() => setSelectedId('')}>
+                {snapGuides.x && <div className="design-snap-guide vertical" aria-hidden="true" />}
+                {snapGuides.y && <div className="design-snap-guide horizontal" aria-hidden="true" />}
                 {generatedMarkup}
               </div>
               <div className="design-canvas-caption">{activeProject?.name || 'Projeto sem nome'} · {device === 'mobile' ? '390 px' : '1200 px'}</div>
@@ -246,6 +284,8 @@ export default function VisualDesignPage() {
             <div className="design-property-actions">
               <button onClick={() => moveSelected(-1)} title="Mover para cima"><ChevronUp size={15}/></button>
               <button onClick={() => moveSelected(1)} title="Mover para baixo"><ChevronDown size={15}/></button>
+              <button onClick={duplicateSelected} title="Duplicar elemento"><Copy size={15}/> Duplicar</button>
+              <button onClick={() => toggleElementFlag(selected.id, 'locked')} title={selected.locked ? 'Desbloquear elemento' : 'Bloquear elemento'}>{selected.locked ? <Lock size={15}/> : <Unlock size={15}/>}</button>
               <button className="danger" onClick={removeSelected} title="Remover elemento"><Trash2 size={15}/> Remover</button>
             </div>
           </> : <div className="design-no-selection">Selecione um elemento na tela ou na lista de camadas.</div>}
