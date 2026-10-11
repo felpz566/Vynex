@@ -262,7 +262,7 @@ export default function ProjectsPage() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      URL.revokeObjectURL(url);
+      window.setTimeout(() => URL.revokeObjectURL(url), 1500);
       setNotice('Download do instalador iniciado.');
     } catch (err) {
       setBuildError(err instanceof Error ? err.message : 'Falha ao preparar o download do instalador.');
