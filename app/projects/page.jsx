@@ -44,6 +44,7 @@ function starterProject(name = 'meu-projeto') {
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState([]);
+  const [projectsLoaded, setProjectsLoaded] = useState(false);
   const [activeId, setActiveId] = useState(null);
   const [repositories, setRepositories] = useState([]);
   const [connected, setConnected] = useState(false);
@@ -72,16 +73,19 @@ export default function ProjectsPage() {
       }
     } catch {
       setProjects([]);
+    } finally {
+      setProjectsLoaded(true);
     }
   }, []);
 
   useEffect(() => {
+    if (!projectsLoaded) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
     } catch {
       setError('O navegador ficou sem espaço para salvar este rascunho local. Envie para o GitHub para guardar o projeto.');
     }
-  }, [projects]);
+  }, [projects, projectsLoaded]);
 
   const activeProject = projects.find((project) => project.id === activeId) || null;
 
@@ -116,6 +120,8 @@ export default function ProjectsPage() {
     if (params.get('github') === 'connected') setNotice('GitHub conectado com sucesso.');
     if (params.get('github') === 'error') setError('Não foi possível conectar ao GitHub. Tente novamente.');
     if (params.get('cloud') === 'connected') setNotice('Conta Google conectada com sucesso.');
+    const importedRepo = params.get('imported');
+    if (importedRepo) setNotice('Repositório ' + importedRepo + ' importado para o workspace.');
     if (params.has('github') || params.has('cloud')) window.history.replaceState({}, '', '/projects');
   }, [loadGitHub]);
 
