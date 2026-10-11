@@ -43,7 +43,8 @@ export default function VynexAI({ projectName, files, mode = 'code', onApply }) 
       const response = await fetch('/api/ai', { cache: 'no-store' });
       const data = await response.json();
       if (response.ok) setUsage(data.usage);
-      else if (response.status !== 401) setError(data.error || 'Não foi possível consultar os créditos.');
+      else if (response.status === 401) setError('Conecte sua conta Google ou GitHub no Workspace para usar a IA.');
+      else setError(data.error || 'Não foi possível consultar os créditos.');
     } catch {}
   };
   useEffect(() => { refreshUsage(); }, []);
