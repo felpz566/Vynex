@@ -84,10 +84,10 @@ export default function VynexAI({ projectName, files, mode = 'code', onApply }) 
       if (!resultEvent) throw new Error('A IA encerrou a resposta sem enviar o resultado final.');
       const data = resultEvent.data || {};
       if (resultEvent.status < 200 || resultEvent.status >= 300) {
-        if (data.usage) setUsage(data.usage);
+        if (data.usage) setUsage((current) => ({ ...current, ...data.usage, extraCredits: data.usage.extraRemaining ?? data.usage.extraCredits ?? current?.extraCredits ?? 0 }));
         throw new Error(data.error || 'A IA não conseguiu preparar uma proposta.');
       }
-      setProposal(data.proposal); setUsage(data.usage); setStageIndex(stages.length - 1);
+      setProposal(data.proposal); setUsage((current) => ({ ...current, ...data.usage, extraCredits: data.usage.extraRemaining ?? data.usage.extraCredits ?? current?.extraCredits ?? 0 })); setStageIndex(stages.length - 1);
       setNotice('A proposta foi revisada. Nada foi alterado no projeto ainda.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro inesperado ao conversar com a IA.');
