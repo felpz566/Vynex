@@ -95,7 +95,7 @@ export default function ProjectsPage() {
         const repoData = await repoResponse.json();
         if (!repoResponse.ok) throw new Error(repoData.error || 'Não foi possível carregar os repositórios.');
         setRepositories(repoData);
-        setTargetRepo((current) => current || repoData[0]?.name || '');
+        setTargetRepo((current) => current || repoData[0]?.fullName || '');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao conectar ao GitHub.');
@@ -192,8 +192,8 @@ export default function ProjectsPage() {
         body: JSON.stringify({
           createRepository: target === 'new',
           newRepoName: activeProject.name.toLowerCase().replace(/[^a-z0-9_.-]/g, '-').replace(/-+/g, '-').slice(0, 100),
-          repository: targetRepo,
-          repositoryOwner: account,
+          repository: target === 'existing' ? targetRepo.split('/').slice(1).join('/') : undefined,
+          repositoryOwner: target === 'existing' ? targetRepo.split('/')[0] : account,
           private: privateRepo,
           description: activeProject.description,
           message: `Update ${activeProject.name} with Vynex`,
@@ -284,7 +284,7 @@ export default function ProjectsPage() {
                       <label className={target === 'new' ? 'projects-target-option selected' : 'projects-target-option'}><input type="radio" name="target" checked={target === 'new'} onChange={() => setTarget('new')}/><span><Plus size={15}/><b>Criar repositório</b><small>Na conta @{account}</small></span></label>
                       <label className={target === 'existing' ? 'projects-target-option selected' : 'projects-target-option'}><input type="radio" name="target" checked={target === 'existing'} onChange={() => setTarget('existing')}/><span><Github size={15}/><b>Repositório existente</b><small>Enviar para branch padrão</small></span></label>
                     </div>
-                    {target === 'existing' && <label className="projects-field"><span>Repositório</span><select value={targetRepo} onChange={(event) => setTargetRepo(event.target.value)}>{repositories.map((repo) => <option key={repo.id} value={repo.name}>{repo.fullName}{repo.private ? ' · privado' : ''}</option>)}</select></label>}
+                    {target === 'existing' && <label className="projects-field"><span>Repositório</span><select value={targetRepo} onChange={(event) => setTargetRepo(event.target.value)}>{repositories.map((repo) => <option key={repo.id} value={repo.fullName}>{repo.fullName}{repo.private ? ' · privado' : ''}</option>)}</select></label>}
                     {target === 'new' && <label className="projects-private-check"><input type="checkbox" checked={privateRepo} onChange={(event) => setPrivateRepo(event.target.checked)}/><LockKeyhole size={15}/> Criar como repositório privado</label>}
                     <button className="projects-push-button" onClick={pushProject} disabled={busy || !activeProject.files.length || (target === 'existing' && !targetRepo)}>{busy ? <><LoaderCircle className="projects-spin" size={17}/> Enviando...</> : <><CloudUpload size={17}/> Fazer push para o GitHub</>}</button>
                     <p className="projects-safety-note"><LockKeyhole size={13}/> Token protegido no servidor. Limite: 50 arquivos, 2 MB por arquivo e 12 MB por envio.</p>
