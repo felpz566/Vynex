@@ -65,3 +65,5 @@
 .projects-file-actions .projects-design-button{display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 11px;border:1px solid #65508e;border-radius:7px;background:#241d32;color:#d8c9ff;font-size:10px;font-weight:700;white-space:nowrap}
 .projects-file-actions .projects-design-button:hover{background:#302342;border-color:#9278c5}
 @media(max-width:650px){.projects-file-actions .projects-design-button{grid-column:1/-1}}
+
+.projects-exe-optin{display:flex;align-items:flex-start;gap:11px;margin:20px 0;padding:15px;border:1px solid #383044;border-radius:10px;background:#15131c;color:#f1eef9;cursor:pointer}.projects-exe-optin input{width:17px;height:17px;margin-top:2px;accent-color:#a78bfa;flex-shrink:0}.projects-exe-optin span{display:flex;flex-direction:column;gap:5px}.projects-exe-optin b{font-size:12px}.projects-exe-optin small{color:#a4a0b2;font-size:11px;line-height:1.6}
