@@ -52,9 +52,36 @@ export default function VynexAI({ projectName, files, mode = 'code', onApply }) 
     if (!prompt.trim() || busy) return;
     setBusy(true); setStageIndex(0); setError(''); setNotice(''); setProposal(null);
     try {
-      const response = await fetch('/api/ai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode, prompt: prompt.trim(), projectName, files: textFiles(files) }) });
-      const data = await response.json();
-      if (!response.ok) { if (data.usage) setUsage(data.usage); throw new Error(data.error || 'A IA não conseguiu preparar uma proposta.'); }
+      const response = await fetch('/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
+        body: JSON.stringify({ mode, prompt: prompt.trim(), projectName, files: textFiles(files) }),
+      });
+      if (!response.body) throw new Error('O navegador não conseguiu abrir o fluxo de progresso da IA.');
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let resultEvent = null;
+      while (true) {
+        const { value, done } = await reader.read();
+        buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+        const blocks = buffer.split('\\n\\n');
+        buffer = blocks.pop() || '';
+        for (const block of blocks) {
+          const line = block.split('\\n').find((entry) => entry.startsWith('data: '));
+          if (!line) continue;
+          const event = JSON.parse(line.slice(6));
+          if (event.type === 'stage') setStageIndex(Math.max(0, Math.min(stages.length - 1, Number(event.index) || 0)));
+          if (event.type === 'result') resultEvent = event;
+        }
+        if (done) break;
+      }
+      if (!resultEvent) throw new Error('A IA encerrou a resposta sem enviar o resultado final.');
+      const data = resultEvent.data || {};
+      if (resultEvent.status < 200 || resultEvent.status >= 300) {
+        if (data.usage) setUsage(data.usage);
+        throw new Error(data.error || 'A IA não conseguiu preparar uma proposta.');
+      }
       setProposal(data.proposal); setUsage(data.usage); setStageIndex(stages.length - 1);
       setNotice('A proposta foi revisada. Nada foi alterado no projeto ainda.');
     } catch (err) {
