@@ -65,10 +65,10 @@ export default function VynexAI({ projectName, files, mode = 'code', onApply }) 
       while (true) {
         const { value, done } = await reader.read();
         buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
-        const blocks = buffer.split('\\n\\n');
+        const blocks = buffer.split('\n\n');
         buffer = blocks.pop() || '';
         for (const block of blocks) {
-          const line = block.split('\\n').find((entry) => entry.startsWith('data: '));
+          const line = block.split('\n').find((entry) => entry.startsWith('data: '));
           if (!line) continue;
           const event = JSON.parse(line.slice(6));
           if (event.type === 'stage') setStageIndex(Math.max(0, Math.min(stages.length - 1, Number(event.index) || 0)));
