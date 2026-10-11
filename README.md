@@ -82,7 +82,7 @@ After changing environment variables, redeploy Vynex. For local development, use
 - `POST /api/integrations/github/disconnect` — clears the local GitHub session cookie.
 - `POST /api/projects/push` — creates a repository or pushes files to an existing repository's default branch.
 
-The project push endpoint accepts 1–50 files, up to 2 MB per file and 12 MB total per request. It validates paths and payloads and requires a connected GitHub session.
+The project push endpoint accepts 1–50 files, up to 2 MB per file and 4 MB total per request. It validates paths and payloads and requires a connected GitHub session.
 
 ## Current behavior and limitations
 
