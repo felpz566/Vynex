@@ -40,3 +40,24 @@
 .project-terminal-input-row{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 13px;border-top:1px solid #ffffff0c;background:#101116}.project-terminal-input-row>span{color:#b9a5ff;font-size:15px}.project-terminal-input-row input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:#f3efff;font:inherit;font-size:11px}.project-terminal-input-row input::placeholder{color:#626675}.project-terminal-input-row button{display:grid;place-items:center;width:29px;height:28px;border:1px solid #3d3450;border-radius:6px;background:#211b2c;color:#d2c2ff}.project-terminal-input-row button:hover{background:#302442}
 .project-terminal-footer{display:flex;justify-content:space-between;gap:10px;padding:8px 13px;border-top:1px solid #ffffff0a;background:#0d0e13;color:#6f7381;font-family:'DM Sans',sans-serif;font-size:9px}.project-terminal-footer>span:first-child{display:flex;align-items:center;gap:6px}.project-terminal-footer i{width:6px;height:6px;border-radius:50%;background:#74d7a0;box-shadow:0 0 7px #74d7a077}
 @media(max-width:650px){.project-terminal-output{height:190px;padding:12px;font-size:10px}.project-terminal-input-row{padding:0 10px}.project-terminal-title span{display:none}}
+
+/* Cloud Windows desktop builds */
+.projects-build-panel{margin:18px 0;padding:18px;border:1px solid #3a3150;border-radius:12px;background:linear-gradient(120deg,#1b1726,#121319 68%);box-shadow:0 10px 28px #0002}
+.projects-build-heading{display:flex;align-items:center;gap:12px}
+.projects-build-icon{display:grid;place-items:center;width:40px;height:40px;flex-shrink:0;border:1px solid #4a3c65;border-radius:10px;background:#2a2139;color:#d2c2ff}
+.projects-build-heading h2{margin:0 0 5px;font-size:13px;color:#f1edff}
+.projects-build-heading p{margin:0;color:#a09bad;font-size:11px;line-height:1.6}
+.projects-build-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:15px}
+.projects-build-button,.projects-download-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:38px;padding:10px 13px;border:1px solid #c5b3ff;border-radius:8px;background:linear-gradient(105deg,#c4b5fd,#9b7df0);color:#191326;font-size:11px;font-weight:800}
+.projects-download-button{border-color:#3b8c67;background:#153725;color:#b7f4d0}
+.projects-build-button:disabled,.projects-download-button:disabled{opacity:.55;cursor:not-allowed}
+.projects-build-running{display:inline-flex;align-items:center;gap:7px;color:#d3c4ff;font-size:11px}
+.projects-build-logs{color:#aaa0d1;font-size:10px;text-decoration:underline}
+.projects-build-note{display:flex;align-items:flex-start;gap:7px;margin:12px 0 0;color:#858392;font-size:10px;line-height:1.7}
+.projects-build-note svg{flex-shrink:0;margin-top:2px}
+.projects-build-error,.projects-build-success{display:flex;align-items:flex-start;gap:8px;margin-top:12px;padding:10px 11px;border-radius:7px;font-size:11px;line-height:1.6}
+.projects-build-error{border:1px solid #593039;background:#27151a;color:#ffb5bd}
+.projects-build-success{border:1px solid #27513c;background:#11231a;color:#a8e9c4}
+.projects-build-error svg,.projects-build-success svg{flex-shrink:0;margin-top:2px}
+.projects-build-error a{text-decoration:underline;font-weight:700}
+@media(max-width:650px){.projects-build-panel{padding:14px}.projects-build-actions{align-items:stretch;flex-direction:column}.projects-build-button,.projects-download-button{width:100%}.projects-build-logs{padding:6px 0}}
