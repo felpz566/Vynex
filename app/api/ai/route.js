@@ -87,9 +87,10 @@ async function consumeCredit(identity) {
 
 async function currentUsage(identity) {
   if (identity.isAdmin) {
+    const usageDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
     return {
-      plan: 'admin', admin: true, limit: null, used: 0, remaining: null,
-      usageDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()),
+      plan: 'admin', admin: true, limit: null, used: 0, remaining: null, usageDate,
+      resetsAt: new Date(Date.parse(usageDate + 'T00:00:00-03:00') + 86400000).toISOString(),
     };
   }
   const today = new Intl.DateTimeFormat('en-CA', {
@@ -102,7 +103,7 @@ async function currentUsage(identity) {
   const plan = planRows?.[0]?.plan || 'free';
   const limit = ({ free: 3, plus: 15, pro: 50, studio: 300 })[plan] || 3;
   const used = Number(usageRows?.[0]?.credits_used || 0);
-  return { plan, admin: false, limit, used, remaining: Math.max(0, limit - used), usageDate: today };
+  return { plan, admin: false, limit, used, remaining: Math.max(0, limit - used), usageDate: today, resetsAt: new Date(Date.parse(today + 'T00:00:00-03:00') + 86400000).toISOString() };
 }
 
 function cleanFiles(input) {
@@ -243,7 +244,7 @@ async function propose(request, identity, body, onStage = async () => {}) {
 
     // Independent second pass: the model reviews its draft and returns corrected full files.
     for (let pass = 0; pass < 3; pass += 1) {
-      await onStage(3);
+      await onStage(mode === 'code' && pass > 0 ? 4 : 3);
       const review = await callGemini(
         'Revise esta proposta criticamente. Corrija os problemas encontrados e devolva os arquivos completos. Não afirme que executou testes. Retorne JSON no formato {"summary":"...","changes":[{"path":"...","content":"..."}],"checks":[{"label":"...","status":"passed|warning|failed","detail":"..."}],"reviewNotes":"..."}.\nModo: ' + mode + '\nPedido: ' + task + '\nPassagem: ' + (pass + 1) + ' de 3\nNotas anteriores: ' + reviewNotes + '\nProposta atual: ' + JSON.stringify({ summary, changes, checks, reviewNotes }),
         'Revise apenas o conteúdo fornecido. Só marque passed quando for possível verificar pelo texto; não diga que executou testes.',
