@@ -11,3 +11,23 @@
 .design-resize-handle{right:-8px;bottom:-8px;cursor:nwse-resize;font-size:13px}
 .design-canvas-element.selected>*:not(.design-drag-handle):not(.design-resize-handle){outline-offset:2px}
 @media(max-width:650px){.design-drag-handle,.design-resize-handle{width:25px;height:25px}}
+
+
+/* Layer controls and canvas snapping guides */
+.design-layer-row{display:flex;align-items:center;gap:3px;min-width:0;border:1px solid transparent;border-radius:7px}
+.design-layer-row.selected{border-color:#4a3b65;background:#241d32}
+.design-layer-row.hidden-layer{opacity:.58}
+.design-layer-row .design-layer{flex:1;min-width:0;padding:8px 5px;border:0;background:transparent}
+.design-layer-row.selected .design-layer{color:#e0d6ff}
+.design-layer-tools{display:flex;align-items:center;gap:1px;padding-right:3px}
+.design-layer-tools button{display:grid;place-items:center;width:20px;height:23px;padding:0;border:0;border-radius:4px;background:transparent;color:#8e91a0}
+.design-layer-tools button:hover:not(:disabled){background:#393046;color:#ded2ff}
+.design-layer-tools button:disabled{opacity:.2}
+.design-canvas-inner{position:relative}
+.design-snap-guide{position:absolute;z-index:4;pointer-events:none;border-color:#a78bfa;border-style:dashed;opacity:.95}
+.design-snap-guide.vertical{top:-70px;bottom:-45px;left:50%;border-left-width:1px}
+.design-snap-guide.horizontal{left:-36px;right:-36px;top:0;border-top-width:1px}
+.design-canvas.mobile .design-snap-guide.horizontal{left:-22px;right:-22px}
+.design-property-actions button{cursor:pointer}
+.design-property-actions button:disabled{opacity:.35;cursor:not-allowed}
+@media(max-width:650px){.design-layer-row .design-layer{padding:7px 3px}.design-layer-tools button{width:19px}.design-snap-guide.vertical{top:-55px;bottom:-40px}}
