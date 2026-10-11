@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
-import { Bot, Check, CheckCircle2, ChevronDown, ChevronUp, CircleAlert, Clock3, Code2, Eye, LoaderCircle, Palette, Send, ShieldCheck, Sparkles, X } from 'lucide-react';
+import { Bot, Check, CheckCircle2, ChevronDown, ChevronUp, CircleAlert, Clock3, Code2, Copy, CreditCard, Eye, LoaderCircle, Palette, RefreshCw, Send, ShieldCheck, Sparkles, Wallet, X } from 'lucide-react';
 import './VynexAI.css';
 
 const STAGE_LABELS = {
@@ -37,6 +37,10 @@ export default function VynexAI({ projectName, files, mode = 'code', onApply }) 
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [applying, setApplying] = useState(false);
+  const [activeTab, setActiveTab] = useState('assistant');
+  const [purchaseBusy, setPurchaseBusy] = useState('');
+  const [purchase, setPurchase] = useState(null);
+  const [copyNotice, setCopyNotice] = useState('');
   const stages = STAGE_LABELS[mode] || STAGE_LABELS.code;
   const refreshUsage = async () => {
     try {
@@ -90,6 +94,30 @@ export default function VynexAI({ projectName, files, mode = 'code', onApply }) 
       setStageIndex(-1); refreshUsage();
     } finally { setBusy(false); }
   };
+  const buyCredits = async (packageId) => {
+    if (purchaseBusy) return;
+    setPurchaseBusy(packageId); setError(''); setNotice(''); setPurchase(null); setCopyNotice('');
+    try {
+      const response = await fetch('/api/credits/purchase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packageId }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Não foi possível criar a cobrança PIX.');
+      setPurchase(data.purchase);
+      setNotice('PIX criado. Os créditos entram no saldo somente após a confirmação do pagamento.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Falha ao criar cobrança PIX.');
+    } finally { setPurchaseBusy(''); }
+  };
+  const copyPix = async () => {
+    if (!purchase?.copyPaste) return;
+    try {
+      await navigator.clipboard.writeText(purchase.copyPaste);
+      setCopyNotice('Código PIX copiado.');
+    } catch { setCopyNotice('Não foi possível copiar automaticamente. Selecione e copie o código PIX abaixo.'); }
+  };
   const decide = async (action) => {
     if (!proposal || applying) return;
     setApplying(true); setError(''); setNotice('');
@@ -114,6 +142,11 @@ export default function VynexAI({ projectName, files, mode = 'code', onApply }) 
       <span className="vynex-ai-credits"><Bot size={13}/> {currentUsage} créditos</span>{expanded ? <ChevronUp size={16}/> : <ChevronDown size={16}/>}
     </button>
     {expanded && <div className="vynex-ai-body">
+      <div className="vynex-ai-tabs" role="tablist" aria-label="Vynex AI">
+        <button type="button" role="tab" aria-selected={activeTab === 'assistant'} className={activeTab === 'assistant' ? 'active' : ''} onClick={() => setActiveTab('assistant')}><Sparkles size={14}/> Assistente</button>
+        <button type="button" role="tab" aria-selected={activeTab === 'credits'} className={activeTab === 'credits' ? 'active' : ''} onClick={() => setActiveTab('credits')}><Wallet size={14}/> Créditos extras <span>{usage?.extraCredits ?? 0}</span></button>
+      </div>
+      {activeTab === 'assistant' ? <>
       <div className="vynex-ai-explainer"><ShieldCheck size={15}/><span>A IA prepara e revisa uma proposta. <b>Os arquivos só mudam depois da sua aprovação.</b> Créditos renovam à meia-noite de Brasília.</span></div>
       <form onSubmit={requestProposal} className="vynex-ai-form">
         <label htmlFor={'vynex-ai-prompt-' + mode}>O que você quer {mode === 'design' ? 'desenhar' : 'programar'}?</label>
@@ -137,6 +170,26 @@ export default function VynexAI({ projectName, files, mode = 'code', onApply }) 
         {proposal.checks?.length > 0 && <details className="vynex-ai-checks"><summary>Verificações da revisão ({proposal.checks.length})</summary>{proposal.checks.map((check, index) => <div key={check.label + '-' + index} className={'vynex-ai-check ' + (check.status || 'warning')}><span>{check.status === 'passed' ? <CheckCircle2 size={14}/> : <CircleAlert size={14}/>}</span><div><b>{check.label}</b><p>{check.detail}</p></div></div>)}</details>}
         <div className="vynex-ai-approval-note">Revise a proposta. Ao aprovar, os arquivos correspondentes do rascunho serão substituídos ou novos arquivos serão adicionados.</div>
         <div className="vynex-ai-decision-actions"><button type="button" className="vynex-ai-reject" onClick={() => decide('reject')} disabled={applying}><X size={15}/> Recusar</button><button type="button" className="vynex-ai-approve" onClick={() => decide('approve')} disabled={applying}>{applying ? <LoaderCircle className="vynex-ai-spin" size={15}/> : <Check size={15}/>} Aprovar e aplicar</button></div>
+      </div>
+      </> : <div className="vynex-ai-topups">
+        <div className="vynex-ai-topups-heading">
+          <span className="vynex-ai-topups-icon"><Wallet size={18}/></span>
+          <div><h3>Créditos extras</h3><p>Acumulam entre compras e não expiram à meia-noite. Quando os créditos diários acabarem, a IA usa este saldo automaticamente.</p></div>
+        </div>
+        <div className="vynex-ai-balance-row"><span>Saldo extra disponível</span><strong>{usage?.admin ? 'Não necessário para administradores' : (usage?.extraCredits ?? 0) + ' créditos'}</strong><button type="button" onClick={refreshUsage} title="Atualizar saldo"><RefreshCw size={14}/></button></div>
+        {!usage?.admin && <div className="vynex-ai-pack-grid">
+          <article className="vynex-ai-pack"><span className="vynex-ai-pack-count">10 créditos</span><strong>R$ 19,90</strong><small>Pacote inicial</small><button type="button" onClick={() => buyCredits('credits_10')} disabled={!!purchaseBusy}>{purchaseBusy === 'credits_10' ? <><LoaderCircle className="vynex-ai-spin" size={14}/> Criando PIX…</> : <><CreditCard size={14}/> Comprar</>}</button></article>
+          <article className="vynex-ai-pack featured"><span className="vynex-ai-pack-count">50 créditos</span><strong>R$ 80,00</strong><small>R$ 1,60 por crédito</small><button type="button" onClick={() => buyCredits('credits_50')} disabled={!!purchaseBusy}>{purchaseBusy === 'credits_50' ? <><LoaderCircle className="vynex-ai-spin" size={14}/> Criando PIX…</> : <><CreditCard size={14}/> Comprar</>}</button></article>
+        </div>}
+        {purchase && <div className="vynex-ai-pix-card">
+          <div className="vynex-ai-pix-heading"><div><b>Pagamento PIX</b><small>{purchase.credits} créditos · {purchase.priceLabel}</small></div><span className="vynex-ai-pending">Aguardando pagamento</span></div>
+          {purchase.qrCodeBase64 && <img className="vynex-ai-pix-qr" src={purchase.qrCodeBase64} alt="QR Code PIX para pagamento"/>}
+          {purchase.qrcodeUrl && <a className="vynex-ai-pix-link" href={purchase.qrcodeUrl} target="_blank" rel="noreferrer">Abrir checkout GoatPay</a>}
+          {purchase.copyPaste && <><label className="vynex-ai-pix-label" htmlFor="vynex-pix-code">PIX copia e cola</label><textarea id="vynex-pix-code" readOnly value={purchase.copyPaste} rows={3}/><button type="button" className="vynex-ai-copy-pix" onClick={copyPix}><Copy size={14}/> Copiar código PIX</button></>}
+          <p>Não feche esta cobrança antes de pagar. Após o pagamento confirmado pela GoatPay, o saldo será atualizado automaticamente.</p>
+          {copyNotice && <small className="vynex-ai-muted">{copyNotice}</small>}
+        </div>}
+        <div className="vynex-ai-topups-note"><ShieldCheck size={15}/><span>O clique em “Comprar” não libera créditos. A confirmação é feita pelo webhook assinado da GoatPay e cada pagamento só pode ser creditado uma vez. Créditos diários não são convertidos em extras.</span></div>
       </div>}
     </div>}
   </section>;
