@@ -84,3 +84,8 @@
   .github-search { width: auto; }
   .github-repo-grid { grid-template-columns: 1fr; }
 }
+
+.github-import-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 39px; margin-top: 14px; padding: 0 12px; border: 1px solid rgba(126,215,178,.28); border-radius: 10px; color: #d9ffed; background: rgba(41,156,111,.14); font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; transition: background .18s, transform .18s; }
+.github-import-button:hover:not(:disabled) { background: rgba(41,156,111,.23); transform: translateY(-1px); }
+.github-import-button:disabled { opacity: .6; cursor: wait; }
+.github-import-button + .github-download-button { margin-top: 8px; }
