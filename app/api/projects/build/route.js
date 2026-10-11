@@ -65,8 +65,10 @@ function generatedHtml(projectName, files) {
         const bg = /^#[0-9a-f]{6}$/i.test(item.background || '') ? item.background : '#8b5cf6';
         const size = Math.max(10, Math.min(96, Number(item.fontSize) || 16));
         const width = Math.max(10, Math.min(100, Number(item.width) || 100));
+        const x = Math.max(-2000, Math.min(2000, Number(item.x) || 0));
+        const y = Math.max(-2000, Math.min(2000, Number(item.y) || 0));
         const align = ['left', 'center', 'right'].includes(item.align) ? item.align : 'left';
-        const style = `color:${color};font-size:${size}px;text-align:${align};width:${width}%;margin:12px auto;font-weight:${item.type === 'heading' ? 750 : 400};`;
+        const style = `color:${color};font-size:${size}px;text-align:${align};width:${width}%;margin:12px auto;font-weight:${item.type === 'heading' ? 750 : 400};transform:translate(${x}px,${y}px);`;
         const text = escapeHtml(item.text || '');
         if (item.type === 'button') return '<button type="button" style="' + style + 'background:' + bg + ';border:0;border-radius:9px;padding:12px 20px;cursor:pointer">' + text + '</button>';
         if (item.type === 'toggle') return '<label style="' + style + 'display:flex;align-items:center;justify-content:' + (align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center') + ';gap:10px;cursor:pointer"><span>' + text + '</span><input type="checkbox" role="switch" style="accent-color:' + bg + ';width:40px;height:22px;cursor:pointer"></label>';
