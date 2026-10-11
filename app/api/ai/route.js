@@ -181,14 +181,23 @@ function validateChanges(changes, mode, originalFiles) {
     }
     if (typeof content !== 'string' || content.length > 50000) throw new Error('Conteúdo inválido ou grande demais para ' + path + '.');
     if (path.endsWith('.json')) {
-      try { JSON.parse(content); } catch { throw new Error('O arquivo JSON ' + path + ' contém sintaxe inválida. A IA deve corrigir antes da aprovação.'); }
+      let parsed;
+      try { parsed = JSON.parse(content); } catch { throw new Error('O arquivo JSON ' + path + ' contém sintaxe inválida. A IA deve corrigir antes da aprovação.'); }
+      if (mode === 'design') {
+        if (path !== 'vynex-design.json' || !parsed || !Array.isArray(parsed.elements) || parsed.elements.length > 30) {
+          throw new Error('O design precisa ser vynex-design.json com até 30 elementos.');
+        }
+        const allowedTypes = new Set(['heading', 'text', 'button', 'box', 'image', 'toggle', 'checkbox', 'tabs']);
+        if (parsed.elements.some((item) => !item || !allowedTypes.has(item.type))) throw new Error('O design contém um tipo de elemento inválido.');
+        if (typeof parsed.background !== 'string' || !/^#[0-9a-f]{6}$/i.test(parsed.background)) throw new Error('O design precisa de uma cor de fundo hexadecimal válida.');
+      }
     }
     return { path, content };
   });
   return normalized;
 }
 
-async function propose(request, identity, body) {
+async function propose(request, identity, body, onStage = async () => {}) {
   const mode = body.mode === 'design' ? 'design' : 'code';
   const task = String(body.prompt || '').trim();
   if (!task || task.length > MAX_PROMPT) return jsonError('Descreva o que deseja fazer (máximo de 12 mil caracteres).', 400);
@@ -199,6 +208,7 @@ async function propose(request, identity, body) {
   let files;
   try { files = cleanFiles(body.files || []); } catch (error) { return jsonError(error.message, 400); }
 
+  await onStage(0);
   let usage;
   try { usage = await consumeCredit(identity); } catch (error) {
     return jsonError('Não foi possível validar os créditos no Supabase: ' + error.message, error.status || 503);
@@ -220,6 +230,8 @@ async function propose(request, identity, body) {
     : 'Você é um engenheiro de software sênior. Leia o contexto atual, preserve APIs existentes, prefira alterações pequenas, seguras e consistentes, sem placeholders. Revise mentalmente os erros de sintaxe e integração antes de responder. Não afirme que rodou compilador ou testes.';
   let generated;
   try {
+    await onStage(1);
+    await onStage(2);
     generated = await callGemini(
       systemRules + '\nTarefa do usuário:\n' + task + '\nProjeto: ' + projectName + '\nArquivos atuais:\n' + fileContext + '\n\n' + schema,
       'Siga estritamente o esquema JSON solicitado.',
@@ -230,11 +242,13 @@ async function propose(request, identity, body) {
     let summary = String(generated.summary || 'Proposta da IA Vynex').slice(0, 1000);
 
     // Independent second pass: the model reviews its draft and returns corrected full files.
+    await onStage(3);
     const review = await callGemini(
       'Revise criticamente esta proposta antes que o usuário aprove. Procure sintaxe inválida, regressões óbvias, inconsistências com a solicitação, riscos de segurança e formato inválido. Se encontrar qualquer problema, corrija os arquivos completos. Se estiver boa, devolva os mesmos arquivos sem alterações. Não diga que executou testes. Retorne JSON no formato {"summary":"...","changes":[{"path":"...","content":"..."}],"checks":[{"label":"...","status":"passed|warning|failed","detail":"..."}],"reviewNotes":"..."}.\nModo: ' + mode + '\nPedido: ' + task + '\nProposta inicial: ' + JSON.stringify({ summary, changes, checks, reviewNotes }),
       'Você está fazendo uma segunda revisão independente. Só marque passed para verificações que possam ser concluídas inspecionando o texto.',
     );
     changes = validateChanges(review.changes, mode, files);
+    if (mode === 'code') await onStage(4);
     checks = Array.isArray(review.checks) ? review.checks.slice(0, 12) : checks;
     reviewNotes = String(review.reviewNotes || reviewNotes);
     summary = String(review.summary || summary).slice(0, 1000);
@@ -243,6 +257,7 @@ async function propose(request, identity, body) {
       return jsonError('A revisão encontrou problemas que não foram resolvidos com confiança. Nenhuma proposta foi criada. Detalhes: ' + checks.filter((item) => item?.status === 'failed').map((item) => item.detail).join(' | ').slice(0, 700), 422);
     }
 
+    await onStage(mode === 'design' ? 4 : 5);
     const proposal = await db('vynex_ai_proposals', {
       method: 'POST',
       body: [{
@@ -323,6 +338,29 @@ export async function POST(request) {
     } catch (error) {
       return jsonError(error.message, error.status || 503);
     }
+  }
+
+  if (request.headers.get('accept')?.includes('text/event-stream')) {
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      start(controller) {
+        const send = (event) => controller.enqueue(encoder.encode('data: ' + JSON.stringify(event) + '\\n\\n'));
+        (async () => {
+          try {
+            const result = await propose(request, identity, body, async (index) => send({ type: 'stage', index }));
+            const data = await result.json();
+            send({ type: 'result', status: result.status, data });
+          } catch (error) {
+            send({ type: 'result', status: 500, data: { error: error.message || 'Erro inesperado na IA.' } });
+          } finally {
+            controller.close();
+          }
+        })();
+      },
+    });
+    return new Response(stream, {
+      headers: { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive' },
+    });
   }
 
   return propose(request, identity, body);
