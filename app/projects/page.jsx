@@ -287,7 +287,7 @@ export default function ProjectsPage() {
                     {target === 'existing' && <label className="projects-field"><span>Repositório</span><select value={targetRepo} onChange={(event) => setTargetRepo(event.target.value)}>{repositories.map((repo) => <option key={repo.id} value={repo.fullName}>{repo.fullName}{repo.private ? ' · privado' : ''}</option>)}</select></label>}
                     {target === 'new' && <label className="projects-private-check"><input type="checkbox" checked={privateRepo} onChange={(event) => setPrivateRepo(event.target.checked)}/><LockKeyhole size={15}/> Criar como repositório privado</label>}
                     <button className="projects-push-button" onClick={pushProject} disabled={busy || !activeProject.files.length || (target === 'existing' && !targetRepo)}>{busy ? <><LoaderCircle className="projects-spin" size={17}/> Enviando...</> : <><CloudUpload size={17}/> Fazer push para o GitHub</>}</button>
-                    <p className="projects-safety-note"><LockKeyhole size={13}/> Token protegido no servidor. Limite: 50 arquivos, 2 MB por arquivo e 12 MB por envio.</p>
+                    <p className="projects-safety-note"><LockKeyhole size={13}/> Token protegido no servidor. Limite: 50 arquivos, 2 MB por arquivo e 4 MB por envio.</p>
                   </>
                 )}
               </section>
