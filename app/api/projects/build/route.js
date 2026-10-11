@@ -86,8 +86,8 @@ function generatedHtml(projectName, files) {
 
   const hasStyle = files.some((file) => ['style.css', 'styles.css', 'main.css'].includes(file.path.toLowerCase()));
   const hasScript = files.some((file) => ['script.js', 'main.js', 'app.js'].includes(file.path.toLowerCase()));
-  const styleLink = hasStyle ? '<link rel="stylesheet" href="./' + (files.find((file) => ['style.css', 'styles.css', 'main.css'].includes(file.path.toLowerCase())).path) + '">' : '';
-  const scriptLink = hasScript ? '<script defer src="./' + (files.find((file) => ['script.js', 'main.js', 'app.js'].includes(file.path.toLowerCase())).path) + '"></script>' : '';
+  const styleLink = hasStyle ? '<link rel="stylesheet" href="./' + escapeHtml(files.find((file) => ['style.css', 'styles.css', 'main.css'].includes(file.path.toLowerCase())).path) + '">' : '';
+  const scriptLink = hasScript ? '<script defer src="./' + escapeHtml(files.find((file) => ['script.js', 'main.js', 'app.js'].includes(file.path.toLowerCase())).path) + '"></script>' : '';
   return `<!doctype html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>${escapeHtml(projectName)}</title>${styleLink}<style>body{margin:0;min-height:100vh;background:#11131c;color:#f8fafc;font-family:Inter,Segoe UI,Arial,sans-serif;display:grid;place-items:center;padding:24px}main{max-width:760px;text-align:center}p{color:#b8c0d4;line-height:1.8}</style>${scriptLink}</head><body><main><h1>${escapeHtml(projectName)}</h1><p>Aplicativo criado com Vynex. Abra o Editor Visual para desenhar a interface ou adicione seus arquivos HTML, CSS e JavaScript.</p></main></body></html>`;
 }
 
