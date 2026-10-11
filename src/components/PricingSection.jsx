@@ -33,6 +33,7 @@ export default function PricingSection({ onStart, onNotify }) {
           </article>
         ))}
       </div>
+      <p className="pricing-note">Créditos de IA por dia: Free 3 · Plus 15 · Pro 50 · Studio 300. Os recursos de cada plano permanecem separados dos limites de IA.</p>
       <p className="pricing-note">Preços ilustrativos para planejamento. Assinaturas e exportações ainda não estão ativas.</p>
     </section>
   );
