@@ -47,6 +47,50 @@ function safePath(path) {
   return ALLOWED_EXTENSIONS.has(ext);
 }
 
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[char]);
+}
+
+function generatedHtml(projectName, files) {
+  const designFile = files.find((file) => file.path === 'vynex-design.json');
+  if (designFile) {
+    try {
+      const design = JSON.parse(Buffer.from(designFile.contentBase64, 'base64').toString('utf8'));
+      const background = /^#[0-9a-f]{6}$/i.test(design.background || '') ? design.background : '#11131c';
+      const elements = Array.isArray(design.elements) ? design.elements.slice(0, 100) : [];
+      const content = elements.map((item) => {
+        const color = /^#[0-9a-f]{6}$/i.test(item.color || '') ? item.color : '#f8fafc';
+        const bg = /^#[0-9a-f]{6}$/i.test(item.background || '') ? item.background : '#8b5cf6';
+        const size = Math.max(10, Math.min(96, Number(item.fontSize) || 16));
+        const width = Math.max(10, Math.min(100, Number(item.width) || 100));
+        const align = ['left', 'center', 'right'].includes(item.align) ? item.align : 'left';
+        const style = `color:${color};font-size:${size}px;text-align:${align};width:${width}%;margin:12px auto;font-weight:${item.type === 'heading' ? 750 : 400};`;
+        const text = escapeHtml(item.text || '');
+        if (item.type === 'button') return `<button type="button" style="${style}background:${bg};border:0;border-radius:9px;padding:12px 20px;cursor:pointer">${text}</button>`;
+        if (item.type === 'image') {
+          const src = /^https?:\/\//i.test(item.text || '') ? escapeHtml(item.text) : '';
+          return `<img src="${src}" alt="" style="${style}display:block;max-width:100%;height:auto;border-radius:12px">`;
+        }
+        if (item.type === 'box') return `<div style="width:${width}%;min-height:90px;margin:12px auto;background:${bg};border:1px solid #ffffff25;border-radius:12px"></div>`;
+        if (item.type === 'heading') return `<h1 style="${style}line-height:1.13;letter-spacing:-1.5px">${text}</h1>`;
+        return `<p style="${style}line-height:1.8">${text}</p>`;
+      }).join('\n');
+      return `<!doctype html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>${escapeHtml(projectName)}</title><style>*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:clamp(24px,6vw,80px) 20px;background:${background};color:#f8fafc;font-family:Inter,Segoe UI,Arial,sans-serif}main{width:min(100%,1000px);margin:0 auto}button{font:inherit}</style></head>
+<body><main>${content || '<h1>Seu aplicativo Vynex</h1>'}</main></body></html>`;
+    } catch {}
+  }
+
+  const hasStyle = files.some((file) => ['style.css', 'styles.css', 'main.css'].includes(file.path.toLowerCase()));
+  const hasScript = files.some((file) => ['script.js', 'main.js', 'app.js'].includes(file.path.toLowerCase()));
+  const styleLink = hasStyle ? '<link rel="stylesheet" href="./' + (files.find((file) => ['style.css', 'styles.css', 'main.css'].includes(file.path.toLowerCase())).path) + '">' : '';
+  const scriptLink = hasScript ? '<script defer src="./' + (files.find((file) => ['script.js', 'main.js', 'app.js'].includes(file.path.toLowerCase())).path) + '"></script>' : '';
+  return `<!doctype html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>${escapeHtml(projectName)}</title>${styleLink}<style>body{margin:0;min-height:100vh;background:#11131c;color:#f8fafc;font-family:Inter,Segoe UI,Arial,sans-serif;display:grid;place-items:center;padding:24px}main{max-width:760px;text-align:center}p{color:#b8c0d4;line-height:1.8}</style>${scriptLink}</head><body><main><h1>${escapeHtml(projectName)}</h1><p>Aplicativo criado com Vynex. Abra o Editor Visual para desenhar a interface ou adicione seus arquivos HTML, CSS e JavaScript.</p></main></body></html>`;
+}
+
 function workflowSource() {
   return `name: Vynex Windows Build
 on:
@@ -98,20 +142,17 @@ export async function POST(request) {
 
   let totalBytes = 0;
   const seen = new Set();
-  let hasIndex = false;
   for (const file of files) {
     if (!safePath(file?.path) || typeof file?.contentBase64 !== 'string' || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(file.contentBase64)) {
       return jsonError('O projeto contém um caminho, extensão ou arquivo inválido. Este primeiro compilador aceita projetos web HTML/CSS/JS.', 400);
     }
     if (seen.has(file.path)) return jsonError(`O caminho "${file.path}" está duplicado.`, 400);
     seen.add(file.path);
-    if (file.path === 'index.html') hasIndex = true;
     const size = Buffer.from(file.contentBase64, 'base64').length;
     if (size > MAX_FILE_BYTES) return jsonError(`"${file.path}" excede 2 MB.`, 413);
     totalBytes += size;
     if (totalBytes > MAX_TOTAL_BYTES) return jsonError('O projeto excede 3 MB no total.', 413);
   }
-  if (!hasIndex) return jsonError('Adicione um index.html na raiz do projeto antes de compilar.', 400);
 
   const repoName = `vynex-build-${projectName.toLowerCase().replace(/[^a-z0-9_.-]/g, '-').slice(0, 45)}-${Date.now().toString(36)}`.slice(0, 100);
   const generatedPackage = JSON.stringify({
@@ -174,7 +215,13 @@ app.on('window-all-closed', () => {
     const branch = repo.default_branch || 'main';
     const ref = await githubRequest(session.accessToken, `/repos/${owner}/${name}/git/ref/heads/${encodeURIComponent(branch)}`);
     const parent = await githubRequest(session.accessToken, `/repos/${owner}/${name}/git/commits/${ref.object.sha}`);
-    const sourceFiles = files.map((file) => ({ path: `app/${file.path}`, content: file.contentBase64, encoding: 'base64' }));
+    const hasDesign = files.some((file) => file.path === 'vynex-design.json');
+    const sourceFiles = files
+      .filter((file) => !(hasDesign && file.path === 'index.html'))
+      .map((file) => ({ path: `app/${file.path}`, content: file.contentBase64, encoding: 'base64' }));
+    if (!files.some((file) => file.path === 'index.html') || hasDesign) {
+      sourceFiles.push({ path: 'app/index.html', content: generatedHtml(projectName, files), encoding: 'utf-8' });
+    }
     sourceFiles.push(
       { path: 'package.json', content: generatedPackage, encoding: 'utf-8' },
       { path: 'main.cjs', content: mainSource, encoding: 'utf-8' },
